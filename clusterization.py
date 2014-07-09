@@ -71,34 +71,73 @@ class Clusterization:
         """
         Count and return distance matrix.
 
-        :param points:
-            List of points.
         :return:
             Distance matrix.
         """
+
         p_len = len(self.points)
         self.dist_matrix = [[0.0 for i in range(p_len)] for j in range(p_len)]
         for i in range(p_len):
             for j in range(p_len):
                 cur_dist = 0.0
                 for k in range(self.dimension):
-                    cur_dist += math.sqrt((self.points[i][k] - self.points[j][k]) ** 2)
+                    cur_dist += (self.points[i][k] - self.points[j][k]) ** 2
                 self.dist_matrix[i][j] = cur_dist
 
 
-
-    def king(self):
+    def king(self, limit):
         """
         Implements King Clusterisation Method.
 
+        :param limit:
+            Maximal middle distance between point and cluster or
+            maximal distance between clusters.
         :return:
             list of clusters. Cluster is the list of points.
             Point is the list of nubmers ([1.3, 3.5] or [1, 2, 3]).
         """
 
+        p_len = len(self.points)
+        clustered_pts_i = []
+        non_clustered_pts_i =[i for i in range(p_len)]
+        clusters = []
+
+        while non_clustered_pts_i:
+
+            if len(non_clustered_pts_i) == 1:
+                i = non_clustered_pts_i[0]
+                clusters.append([])
+                clusters[cluster_i].append(self.points[i])
+                non_clustered_pts_i.remove(i)
+                break
+
+            # Find nearest points.
+            min_i = None
+            min_dist = self.dist_matrix[0][1]
+            for i in range(p_len - 1):
+                for j in range(i + 1, p_len):
+                    if min_dist > self.dist_matrix[i][j]:
+                        min_dist = self.dist_matrix[i][j]
+                        min_i = i
+
+            # Put one of the nearest points into the cluster.
+            i = non_clustered_pts_i[min_i]
+            clusters.append([])
+            cluster_i = len(clusters) - 1
+            clusters[cluster_i].append(self.points[i])
+            non_clustered_pts_i.remove(i)
+
+            non_clustered_pts_i_copy = non_clustered_pts_i[:]
+
+            for j in non_clustered_pts_i:
+                middle_dist = 0
+                for point in clusters[cluster_i]:
 
 
-        pass
+
+                
+
+
 
 
     def k_middle(slef):

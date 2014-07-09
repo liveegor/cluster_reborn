@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>421</width>
-    <height>586</height>
+    <width>404</width>
+    <height>584</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -197,10 +197,36 @@
        </layout>
       </item>
      </layout>
-     <zorder>d3_radio_button</zorder>
-     <zorder>d2_radio_button</zorder>
      <zorder></zorder>
     </widget>
+   </item>
+   <item>
+    <widget class="QCheckBox" name="xls_check_box">
+     <property name="text">
+      <string>Сохранить результаты в таблицу Excel</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <item>
+      <widget class="QLabel" name="label_6">
+       <property name="text">
+        <string>Путь к таблице: </string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="xls_name_line_edit"/>
+     </item>
+     <item>
+      <widget class="QToolButton" name="open_xls_tool_button">
+       <property name="text">
+        <string>...</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </item>
    <item>
     <layout class="QFormLayout" name="formLayout">
@@ -216,11 +242,6 @@
        <property name="toolTip">
         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Выберите метод кластеризации&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
        </property>
-       <item>
-        <property name="text">
-         <string>Дендрограмма</string>
-        </property>
-       </item>
        <item>
         <property name="text">
          <string>Кинга</string>
@@ -239,6 +260,11 @@
        <item>
         <property name="text">
          <string>&quot;Краб&quot;</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Последовательная кластеризация</string>
         </property>
        </item>
       </widget>
