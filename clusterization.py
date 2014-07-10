@@ -10,7 +10,8 @@ class Clusterization:
     2D or 3D points array.
     """
 
-    def __init__(self, points = None, labels = None, xml_enable = False, xml_file_name = None):
+    def __init__(self, points = None, labels = None,
+                 xml_enable = False, xml_file_name = None):
         """
 
         :param points:
@@ -93,21 +94,22 @@ class Clusterization:
             Maximal middle distance between point and cluster or
             maximal distance between clusters.
         :return:
-            list of clusters. Cluster is the list of points.
+            List of clusters. Cluster is the list of points.
             Point is the list of nubmers ([1.3, 3.5] or [1, 2, 3]).
         """
 
         p_len = len(self.points)
         clustered_pts_i = []
         non_clustered_pts_i =[i for i in range(p_len)]
-        clusters = []
+        clusters_i = []
 
         while non_clustered_pts_i:
 
             if len(non_clustered_pts_i) == 1:
                 i = non_clustered_pts_i[0]
-                clusters.append([])
-                clusters[cluster_i].append(self.points[i])
+                clusters_i.append([])
+                cur_cluster = len(clusters_i) - 1
+                clusters_i[cur_cluster].append(i)
                 non_clustered_pts_i.remove(i)
                 break
 
@@ -122,22 +124,43 @@ class Clusterization:
 
             # Put one of the nearest points into the cluster.
             i = non_clustered_pts_i[min_i]
-            clusters.append([])
-            cluster_i = len(clusters) - 1
-            clusters[cluster_i].append(self.points[i])
+            clusters_i.append([])
+            cur_cluster = len(clusters_i) - 1
+            clusters_i[cur_cluster].append(i)
             non_clustered_pts_i.remove(i)
 
             non_clustered_pts_i_copy = non_clustered_pts_i[:]
 
             for j in non_clustered_pts_i:
                 middle_dist = 0
-                for point in clusters[cluster_i]:
+                for point_i in clusters_i[cur_cluster]:
+                    middle_dist += self.dist_matrix[point_i][j]
+                middle_dist /= len(clusters_i[cur_cluster])
 
+                # To include or not to inclule: that is the question.
+                if middle_dist > limit:
+                    continue
+                else:
+                    clusters_i[cur_cluster].append(j)
+                    non_clustered_pts_i_copy.remove(j)
 
+            non_clustered_pts_i = non_clustered_pts_i_copy
 
-                
+        # Transform indexes into points.
+        clusters = [[0 for i in range(len(clusters_i[j]))] for j in range(len(clusters_i))]
+        for i in range(len(clusters_i)):
+            for j in range(len(clusters_i[i])):
+                clusters[i][j] = self.points[clusters_i[i][j]][:]
 
+        # Transform indexes into labels.
+        clustered_labels = None
+        if self.labels:
+            clustered_labels = [[0 for i in range(len(clusters_i[j]))] for j in range(len(clusters_i))]
+            for i in range(len(clusters_i)):
+                for j in range(len(clusters_i[i])):
+                    clustered_labels[i][j] = self.labels[clusters_i[i][j]][:]
 
+        return clusters, clustered_labels
 
 
     def k_middle(slef):
@@ -185,6 +208,13 @@ if __name__ == '__main__':
            [49.8, 30.5], [39.2, 31.0], [41.9, 27.0],
            [45.6, 27.5], [38.1, 30.5], [44.2, 30.5]]
 
-    cl = Clusterization(pts)
-    for row in cl.dist_matrix:
+    labels = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10',
+              '11', '12', '13', '14', '15']
+
+    cl = Clusterization(pts, labels)
+    cluster, clustered_labels = cl.king(24.0)
+    for row in cluster:
         print row
+    if clustered_labels:
+        for row in clustered_labels:
+            print row
