@@ -3,6 +3,7 @@
 
 from matplotlib import pyplot as plt
 import math
+import xlwt
 
 class Clusterization:
     """
@@ -33,6 +34,8 @@ class Clusterization:
         self.xml_file_name = xml_file_name
         self.dist_matrix = None
         self.count_dist_matrix()
+        self.clusters = None
+        self.clustered_labels = None
 
 
     def set_points(self, points, labels):
@@ -85,6 +88,28 @@ class Clusterization:
                     cur_dist += (self.points[i][k] - self.points[j][k]) ** 2
                 self.dist_matrix[i][j] = cur_dist
 
+        return self.dist_matrix
+
+
+    def draw(self, clusters = None, clustered_lables = None):
+        """
+        Draws clusters with clustered_labels. If clusters clusters
+        or clustered_labels is None, draws self.clusters with
+        self.clustered_labels. In this case you can do it, if you
+        call clasterization method before.
+
+        :param clusters:
+            List of clusters. Cluster is the list of points.
+            Point is the list of nubmers ([1.3, 3.5] or [1, 2, 3]).
+        :param clustered_lables:
+            List of lists with the same dimension as clusters, but
+            the elements are strings, not points.
+        :return:
+            Nothing
+        """
+
+        # Give to clusters pretty view.
+
 
     def king(self, limit):
         """
@@ -98,10 +123,34 @@ class Clusterization:
             Point is the list of nubmers ([1.3, 3.5] or [1, 2, 3]).
         """
 
+        # Preparations for xml writing
+        work_book = None
+        work_sheet = None
+        style_table = None
+        style_text = None
+        last_row = 0
+        if self.xml_enable:
+            work_book = xlwt.Workbook()
+            work_sheet = work_book.add_sheet('Results')
+            style_table = xlwt.XFStyle()
+            style_table.borders.bottom = 1
+            style_table.borders.top = 1
+            style_table.borders.left = 1
+            style_table.borders.right = 1
+            style_text = xlwt.XFStyle()
+
         p_len = len(self.points)
-        clustered_pts_i = []
         non_clustered_pts_i =[i for i in range(p_len)]
         clusters_i = []
+
+        # Write the distance matrix into xml.
+        if self.xml_enable:
+            work_sheet.write(last_row , 0, u'Матрица расстояний:', style_text)
+            last_row += 1
+            for i in range(p_len):
+                for j in range(p_len):
+                    work_sheet.write(last_row, j, self.dist_matrix[i][j], style_table)
+                last_row += 1
 
         while non_clustered_pts_i:
 
@@ -160,6 +209,12 @@ class Clusterization:
                 for j in range(len(clusters_i[i])):
                     clustered_labels[i][j] = self.labels[clusters_i[i][j]][:]
 
+        self.clusters = clusters
+        self.clustered_labels = clustered_labels
+
+        if self.xml_enable:
+            work_book.save(self.xml_file_name)
+
         return clusters, clustered_labels
 
 
@@ -212,7 +267,11 @@ if __name__ == '__main__':
               '11', '12', '13', '14', '15']
 
     cl = Clusterization(pts, labels)
+    cl.enable_xml_output(True, "output.xls")
     cluster, clustered_labels = cl.king(24.0)
+
+
+
     for row in cluster:
         print row
     if clustered_labels:
