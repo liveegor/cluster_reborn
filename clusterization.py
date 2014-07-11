@@ -35,7 +35,7 @@ class Clusterization:
         self.xml_enable = xml_enable
         self.xml_file_name = xml_file_name
         self.dist_matrix = None
-        self.count_dist_matrix()
+        self.__count_dist_matrix()
         self.clusters = None
         self.clustered_labels = None
 
@@ -54,7 +54,7 @@ class Clusterization:
         self.points = points
         self.dimension = len(points[0])
         self.labels = labels
-        self.count_dist_matrix()
+        self.__count_dist_matrix()
 
 
     def enable_xml_output(self, enable = False, file_name = None):
@@ -73,7 +73,7 @@ class Clusterization:
         self.xml_file_name = file_name
 
 
-    def count_dist_matrix(self):
+    def __count_dist_matrix(self):
         """
         Count and return distance matrix.
 
@@ -90,10 +90,8 @@ class Clusterization:
                     cur_dist += (self.points[i][k] - self.points[j][k]) ** 2
                 self.dist_matrix[i][j] = cur_dist
 
-        return self.dist_matrix
 
-
-    def draw(self, clusters = None, clustered_lables = None):
+    def draw(self):
         """
         Draws clusters with clustered_labels. If clusters clusters
         or clustered_labels is None, draws self.clusters with
@@ -110,7 +108,12 @@ class Clusterization:
             Nothing
         """
 
-        # Give to clusters pretty view.
+        # Drawing
+        for cluster in self.clusters:
+            x = [cluster[i][0] for i in range(len(cluster))]
+            y = [cluster[i][1] for i in range(len(cluster))]
+            plt.plot(x, y, 'ro-')
+        plt.show()
 
 
     def king(self, limit):
@@ -229,6 +232,7 @@ class Clusterization:
                     middle_dist += self.dist_matrix[point_i][j]
                 middle_dist /= len(clusters_i[cur_cluster])
                 computations_str += ') / {} = {}'.format(len(clusters_i[cur_cluster]), middle_dist)
+                computations_str = '(' + computations_str[3:]
 
 
                 if self.xml_enable:
@@ -262,7 +266,7 @@ class Clusterization:
                 last_empty_row += 1
                 work_sheet.write(last_empty_row, 0, u'Состав кластера №{}: {}'
                  .format(cur_cluster, clusters_i[cur_cluster]))
-                last_empty_row += 1
+                last_empty_row += 2
 
         # Transform indexes into points.
         clusters = [[0 for i in range(len(clusters_i[j]))] for j in range(len(clusters_i))]
@@ -332,17 +336,24 @@ if __name__ == '__main__':
            [49.8, 30.5], [39.2, 31.0], [41.9, 27.0],
            [45.6, 27.5], [38.1, 30.5], [44.2, 30.5]]
 
+    pts3d = [[41.5, 26.5, 1.1], [42.3, 24.5, 1.1], [42.0, 24.5, 1.1],
+           [38.2, 25.5, 1.1], [39.3, 26.0, 1.1], [41.5, 29.5, 1.1],
+           [45.5, 30.0, 1.1], [39.5, 30.5, 1.1], [42.0, 30.5, 1.1],
+           [49.8, 30.5, 1.1], [39.2, 31.0, 1.1], [41.9, 27.0, 1.1],
+           [45.6, 27.5, 1.1], [38.1, 30.5, 1.1], [44.2, 30.5, 1.1]]
+
     # labels = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10',
     #           '11', '12', '13', '14', '15']
 
     cl = Clusterization(pts)
     cl.enable_xml_output(True, "output.xls")
     cluster, clustered_labels = cl.king(24.0)
+    cl.draw()
 
 
 
-    for row in cluster:
-        print row
-    if clustered_labels:
-        for row in clustered_labels:
-            print row
+    # for row in cluster:
+    #     print row
+    # if clustered_labels:
+    #     for row in clustered_labels:
+    #         print row
