@@ -150,6 +150,11 @@ class Clusterization:
             else:
                 xls_labels = [str(i) for i in range(p_len)]
 
+        # Write limit into xml.
+        if self.xml_enable:
+            work_sheet.write(last_empty_row, 0, u'Порог равен {}'.format(limit))
+            last_empty_row += 2
+
         # Write points into xml.
         if self.xml_enable:
             for i in range(1, self.dimension + 1):
@@ -187,8 +192,9 @@ class Clusterization:
 
                 # Tell it..
                 if self.xml_enable:
-                    work_sheet.write(last_empty_row, 0, u'Осталась одна точка. \
-                     Составим из нее кластер.')
+                    work_sheet.write(last_empty_row, 0, u'Точка №{} осталась одна.'\
+                     u'Кластер №{} будет состоять лишь из этой точки.'.format(i, cur_cluster))
+                    last_empty_row += 1
                 break
 
             # Find nearest points.
@@ -207,22 +213,56 @@ class Clusterization:
             clusters_i[cur_cluster].append(i)
             non_clustered_pts_i.remove(i)
 
+            if self.xml_enable:
+                last_empty_row += 1
+                work_sheet.write(last_empty_row, 0, u'Создадим кластер №{}. ' \
+                 u'Добавим туда точку №{}'.format(cur_cluster, i))
+                last_empty_row += 1
+
             non_clustered_pts_i_copy = non_clustered_pts_i[:]
 
             for j in non_clustered_pts_i:
+                computations_str = ''
                 middle_dist = 0
                 for point_i in clusters_i[cur_cluster]:
+                    computations_str += ' + {}'.format(self.dist_matrix[point_i][j])
                     middle_dist += self.dist_matrix[point_i][j]
                 middle_dist /= len(clusters_i[cur_cluster])
+                computations_str += ') / {} = {}'.format(len(clusters_i[cur_cluster]), middle_dist)
+
+
+                if self.xml_enable:
+                    work_sheet.write(last_empty_row, 0, u'Рассмотрим точку №{}. ' \
+                      u'Среднее расстояние до точек кластера №{} равно {}'
+                      .format(j, cur_cluster, computations_str))
+                    last_empty_row += 1
 
                 # To include or not to inclule: that is the question.
                 if middle_dist > limit:
+
+                    if self.xml_enable:
+                        work_sheet.write(last_empty_row, 0, u'Следовательно, не будем ' \
+                         u'добавлять данную точку в этот кластер.')
+                        last_empty_row += 1
+
                     continue
+
                 else:
                     clusters_i[cur_cluster].append(j)
                     non_clustered_pts_i_copy.remove(j)
 
+                    if self.xml_enable:
+                        work_sheet.write(last_empty_row, 0, u'Следовательно, добавим '\
+                         u'данную точку в этот кластер.')
+                        last_empty_row += 1
+
             non_clustered_pts_i = non_clustered_pts_i_copy
+
+            if self.xml_enable:
+                last_empty_row += 1
+                work_sheet.write(last_empty_row, 0, u'Состав кластера №{}: {}'
+                 .format(cur_cluster, clusters_i[cur_cluster]))
+                last_empty_row += 1
 
         # Transform indexes into points.
         clusters = [[0 for i in range(len(clusters_i[j]))] for j in range(len(clusters_i))]
