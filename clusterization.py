@@ -27,15 +27,8 @@ class Clusterization:
             Nothing
         """
 
-        self.points = points
-        self.dimension = None
-        if points:
-            self.dimension = len(points[0])
-        self.labels = labels
-        self.xml_enable = xml_enable
-        self.xml_file_name = xml_file_name
-        self.dist_matrix = None
-        self.__count_dist_matrix()
+        self.set_points(points, labels)
+        self.enable_xml_output(xml_enable, xml_file_name)
         self.clusters = None
         self.clustered_labels = None
 
@@ -52,8 +45,11 @@ class Clusterization:
         """
 
         self.points = points
+        self.dimension = None
         self.dimension = len(points[0])
         self.labels = labels
+        if not labels:
+            self.labels = ['{}'.format(i) for i in range(len(points))]
         self.__count_dist_matrix()
 
 
@@ -93,27 +89,44 @@ class Clusterization:
 
     def draw(self):
         """
-        Draws clusters with clustered_labels. If clusters clusters
-        or clustered_labels is None, draws self.clusters with
-        self.clustered_labels. In this case you can do it, if you
-        call clasterization method before.
+        Draws clusters with clustered_labels.
 
-        :param clusters:
-            List of clusters. Cluster is the list of points.
-            Point is the list of nubmers ([1.3, 3.5] or [1, 2, 3]).
-        :param clustered_lables:
-            List of lists with the same dimension as clusters, but
-            the elements are strings, not points.
         :return:
             Nothing
         """
 
-        # Drawing
-        for cluster in self.clusters:
-            x = [cluster[i][0] for i in range(len(cluster))]
-            y = [cluster[i][1] for i in range(len(cluster))]
-            plt.plot(x, y, 'ro-')
-        plt.show()
+        # TODO: pretty view with crab
+
+        # 2D Drawing
+        if self.dimension == 2:
+            min_x = min([self.points[i][0] for i in range(len(self.points))])
+            max_x = max([self.points[i][0] for i in range(len(self.points))])
+            min_y = min([self.points[i][1] for i in range(len(self.points))])
+            max_y = max([self.points[i][1] for i in range(len(self.points))])
+            wh = 0  # width and simul. heigth
+            if (max_x - min_x) > (max_y - min_y):
+                wh = max_x - min_x
+            else: wh = max_y - min_y
+            plt.xlim(min_x - 1, min_x + wh + 1)
+            plt.ylim(min_y - 1, min_y + wh + 1)
+
+            for cluster, label in zip(self.clusters, self.clustered_labels):
+                x = [cluster[i][0] for i in range(len(cluster))]
+                y = [cluster[i][1] for i in range(len(cluster))]
+                l = [label[i] for i in range(len(label))]
+                plt.plot(x, y, 'ro-')
+
+                for X, Y, L in zip(x, y, l):
+                    plt.annotate(
+                      L, xy = (X, Y), xytext = (-10, 10),
+                      textcoords = 'offset points', ha = 'center', va = 'bottom',
+                      bbox = dict(boxstyle = 'round,pad=0.5', fc = 'yellow', alpha = 0.5))
+
+            plt.show()
+
+        # TODO: 3D Drawing
+        elif self.dimension == 3:
+            pass
 
 
     def king(self, limit):
