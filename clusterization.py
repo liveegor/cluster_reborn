@@ -88,6 +88,70 @@ class Clusterization:
                 self.dist_matrix[i][j] = cur_dist
 
 
+    def __write_points_into_xml_sheet (self, work_sheet, last_empty_row):
+        """
+        :param work_sheet:
+            Worksheet instance from xlwt library.
+        :param last_empty_row:
+            Row on which points will be begun to write.
+        :return:
+            New empty row.
+        """
+
+        p_len = len(self.points)
+        new_last_empty_row = last_empty_row
+        style_table = xlwt.XFStyle()
+        style_table.borders.bottom = 1
+        style_table.borders.top = 1
+        style_table.borders.left = 1
+        style_table.borders.right = 1
+
+        for i in range(1, self.dimension + 1):
+            work_sheet.write(new_last_empty_row + i, 0, u'x{}'.format(i), style_table)
+        for i in range(p_len):
+            work_sheet.write(new_last_empty_row, i + 1, self.labels[i], style_table)
+        new_last_empty_row += 1
+        for i in range(p_len):
+            for j in range(self.dimension):
+                work_sheet.write(new_last_empty_row + j, i + 1, self.points[i][j], style_table)
+        new_last_empty_row += self.dimension + 1
+
+        return new_last_empty_row
+
+
+    def __write_dist_table_into_xml_sheet (self, work_sheet, last_empty_row):
+        """
+        :param work_sheet:
+            Worksheet instance from xlwt library.
+        :param last_empty_row:
+            Row on which points will be begun to write.
+        :return:
+            New empty row.
+        """
+
+        p_len = len(self.points)
+        new_last_empty_row = last_empty_row
+        style_table = xlwt.XFStyle()
+        style_table.borders.bottom = 1
+        style_table.borders.top = 1
+        style_table.borders.left = 1
+        style_table.borders.right = 1
+
+        work_sheet.write(new_last_empty_row , 0, u'Матрица расстояний:')
+        new_last_empty_row += 1
+        for i in range(p_len):
+            work_sheet.write(new_last_empty_row, i + 1, self.labels[i], style_table)
+        new_last_empty_row += 1
+        for j in range(p_len):
+            work_sheet.write(new_last_empty_row + j, 0, self.labels[j], style_table)
+        for i in range(p_len):
+            for j in range(p_len):
+                work_sheet.write(new_last_empty_row + i, j + 1, self.dist_matrix[i][j], style_table)
+        new_last_empty_row += p_len + 1
+
+        return new_last_empty_row
+
+
     def draw(self):
         """
         Draws clusters with clustered_labels.
@@ -145,7 +209,6 @@ class Clusterization:
             plt.show()
 
 
-
     def king(self, limit):
         """
         Implements King Clusterisation Method.
@@ -166,9 +229,7 @@ class Clusterization:
         work_book = None
         work_sheet = None
         style_table = None
-        style_text = None
         last_empty_row = 0
-        xls_labels = None
         if self.xml_enable:
             work_book = xlwt.Workbook()
             work_sheet = work_book.add_sheet('Results')
@@ -177,11 +238,6 @@ class Clusterization:
             style_table.borders.top = 1
             style_table.borders.left = 1
             style_table.borders.right = 1
-            style_text = xlwt.XFStyle()
-            if self.labels:
-                xls_labels = self.labels
-            else:
-                xls_labels = [str(i) for i in range(p_len)]
 
         # Write limit into xml.
         if self.xml_enable:
@@ -190,30 +246,14 @@ class Clusterization:
 
         # Write points into xml.
         if self.xml_enable:
-            for i in range(1, self.dimension + 1):
-                work_sheet.write(last_empty_row + i, 0, u'x{}'.format(i), style_table)
-            for i in range(p_len):
-                work_sheet.write(last_empty_row, i + 1, xls_labels[i], style_table)
-            last_empty_row += 1
-            for i in range(p_len):
-                for j in range(self.dimension):
-                    work_sheet.write(last_empty_row + j, i + 1, self.points[i][j], style_table)
-            last_empty_row += self.dimension + 1
+            last_empty_row = self.__write_points_into_xml_sheet(work_sheet, last_empty_row)
 
         # Write the distance matrix into xml.
         if self.xml_enable:
-            work_sheet.write(last_empty_row , 0, u'Матрица расстояний:', style_text)
-            last_empty_row += 1
-            for i in range(p_len):
-                work_sheet.write(last_empty_row, i + 1, xls_labels[i], style_table)
-            last_empty_row += 1
-            for j in range(p_len):
-                work_sheet.write(last_empty_row + j, 0, xls_labels[j], style_table)
-            for i in range(p_len):
-                for j in range(p_len):
-                    work_sheet.write(last_empty_row + i, j + 1, self.dist_matrix[i][j], style_table)
-            last_empty_row += p_len + 1
+            last_empty_row = self.__write_dist_table_into_xml_sheet(work_sheet, last_empty_row)
 
+        # While non clustered points indexes list is
+        # not empty, we are clustering em.
         while non_clustered_pts_i:
 
             if len(non_clustered_pts_i) == 1:
