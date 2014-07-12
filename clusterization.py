@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from matplotlib import pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 import math
 import xlwt
 
@@ -107,8 +108,8 @@ class Clusterization:
             if (max_x - min_x) > (max_y - min_y):
                 wh = max_x - min_x
             else: wh = max_y - min_y
-            plt.xlim(min_x - 1, min_x + wh + 1)
-            plt.ylim(min_y - 1, min_y + wh + 1)
+            plt.xlim(min_x - wh/12.0, min_x + wh + wh/12.0)
+            plt.ylim(min_y - wh/12.0, min_y + wh + wh/12.0)
 
             for cluster, label in zip(self.clusters, self.clustered_labels):
                 x = [cluster[i][0] for i in range(len(cluster))]
@@ -121,12 +122,28 @@ class Clusterization:
                       L, xy = (X, Y), xytext = (-10, 10),
                       textcoords = 'offset points', ha = 'center', va = 'bottom',
                       bbox = dict(boxstyle = 'round,pad=0.5', fc = 'yellow', alpha = 0.5))
+            plt.xlabel('X')
+            plt.ylabel('Y')
+            plt.show()
+
+        # 3D Drawing
+        elif self.dimension == 3:
+            fig = plt.figure()
+            ax = fig.add_subplot(111, projection='3d')
+            n = 100
+            for cluster, label, color in zip(self.clusters, self.clustered_labels, ['r', 'g', 'b']):
+                x = [cluster[i][0] for i in range(len(cluster))]
+                y = [cluster[i][1] for i in range(len(cluster))]
+                z = [cluster[i][2] for i in range(len(cluster))]
+                ax.scatter(x, y, z, c = color)
+                # todo: line connections, labels
+
+            ax.set_xlabel('X')
+            ax.set_ylabel('Y')
+            ax.set_zlabel('Z')
 
             plt.show()
 
-        # TODO: 3D Drawing
-        elif self.dimension == 3:
-            pass
 
 
     def king(self, limit):
