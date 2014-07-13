@@ -72,10 +72,10 @@ class Clusterization:
 
     def __count_dist_matrix(self):
         """
-        Count and return distance matrix.
+        Count distances matrix.
 
         :return:
-            Distance matrix.
+            Nothing.
         """
 
         p_len = len(self.points)
@@ -150,6 +150,11 @@ class Clusterization:
         new_last_empty_row += p_len + 1
 
         return new_last_empty_row
+
+
+    def __pretty_view (self):
+        for cluster in self.clusters:
+            cluster.sort()
 
 
     def draw(self):
@@ -355,6 +360,8 @@ class Clusterization:
         self.clusters = clusters
         self.clustered_labels = clustered_labels
 
+        self.__pretty_view()
+
         if self.xml_enable:
             work_book.save(self.xml_file_name)
 
@@ -393,8 +400,11 @@ class Clusterization:
             list of clusters. Cluster is the list of points.
             Point is the list of nubmers ([1.3, 3.5] or [1, 2, 3]).
         """
+        # todo: CRABBBB!!
 
-        pass
+        p_len = len(self.pts)
+
+
 
 
 # Call if this is main module
