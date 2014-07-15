@@ -70,6 +70,29 @@ class Clusterization:
         self.xml_file_name = file_name
 
 
+    def count_dist_matrix(self, points):
+        """
+        Count and return distance matrix.
+
+        :param points:
+            List of points.
+        :return:
+            Distance matrix.
+        """
+
+        p_len = len(points)
+        dimension = len(points[0])
+        dist_matrix = [[0.0 for i in range(p_len)] for j in range(p_len)]
+        for i in range(p_len):
+            for j in range(p_len):
+                cur_dist = 0.0
+                for k in range(dimension):
+                    cur_dist += (points[i][k] - points[j][k]) ** 2
+                dist_matrix[i][j] = cur_dist
+
+        return dist_matrix
+
+
     def __count_dist_matrix(self):
         """
         Count distances matrix.
@@ -78,14 +101,7 @@ class Clusterization:
             Nothing.
         """
 
-        p_len = len(self.points)
-        self.dist_matrix = [[0.0 for i in range(p_len)] for j in range(p_len)]
-        for i in range(p_len):
-            for j in range(p_len):
-                cur_dist = 0.0
-                for k in range(self.dimension):
-                    cur_dist += (self.points[i][k] - self.points[j][k]) ** 2
-                self.dist_matrix[i][j] = cur_dist
+        self.dist_matrix = self.count_dist_matrix(self.points)
 
 
     def __write_points_into_xml_sheet (self, work_sheet, last_empty_row):
@@ -152,9 +168,49 @@ class Clusterization:
         return new_last_empty_row
 
 
-    def __pretty_view (self):
-        for cluster in self.clusters:
-            cluster.sort()
+    def __draw_crabbed_cluster(self, cluster, labels):
+        """
+
+        :param labels:
+        :param cluster:
+        :return:
+        """
+
+        # todo: add 3d drawng in this func
+
+        dist_matrix = self.count_dist_matrix(cluster)
+        p_len = len(cluster)
+        dimension = len(cluster[0])
+        draw_pts_i = []
+        not_draw_pts_i = [i for i in range(p_len)]
+
+        tmp = not_draw_pts_i[0]
+        not_draw_pts_i.remove(tmp)
+        draw_pts_i.append(tmp)
+
+        # Draw using crab algorithm.
+        while not_draw_pts_i:
+            min_i = draw_pts_i[0]
+            min_j = not_draw_pts_i[0]
+            min_distance = dist_matrix[min_i][min_j]
+            for i in draw_pts_i:
+                for j in not_draw_pts_i:
+                    if dist_matrix[i][j] < min_distance:
+                        min_distance = dist_matrix[i][j]
+                        min_i = i
+                        min_j = j
+
+            # Draw points with min distance.
+            x = [cluster[i][0] for i in (min_i, min_j)]
+            y = [cluster[i][1] for i in (min_i, min_j)]
+            plt.plot(x, y, 'ro-')
+            draw_pts_i.append(min_i)
+            draw_pts_i.append(min_j)
+            draw_pts_i.remove(min_i)
+            not_draw_pts_i.remove(min_j)
+
+
+
 
 
     def draw(self):
@@ -164,8 +220,6 @@ class Clusterization:
         :return:
             Nothing
         """
-
-        # TODO: pretty view with crab
 
         # 2D Drawing
         if self.dimension == 2:
@@ -181,10 +235,11 @@ class Clusterization:
             plt.ylim(min_y - wh/12.0, min_y + wh + wh/12.0)
 
             for cluster, label in zip(self.clusters, self.clustered_labels):
+                # TODO: crab draw cluster func
                 x = [cluster[i][0] for i in range(len(cluster))]
                 y = [cluster[i][1] for i in range(len(cluster))]
                 l = [label[i] for i in range(len(label))]
-                plt.plot(x, y, 'ro-')
+                self.__draw_crabbed_cluster(cluster, label)
 
                 for X, Y, L in zip(x, y, l):
                     plt.annotate(
@@ -360,8 +415,6 @@ class Clusterization:
         self.clusters = clusters
         self.clustered_labels = clustered_labels
 
-        self.__pretty_view()
-
         if self.xml_enable:
             work_book.save(self.xml_file_name)
 
@@ -403,8 +456,6 @@ class Clusterization:
         # todo: CRABBBB!!
 
         p_len = len(self.pts)
-
-
 
 
 # Call if this is main module

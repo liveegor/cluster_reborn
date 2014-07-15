@@ -2,17 +2,20 @@
 # -*- coding: utf-8 -*-
 
 import sys
-import Form
+import form
 from PyQt4 import QtCore, QtGui
 
 
-class MyForm (QtGui.QWidget, Form.Ui_Form):
+class MyForm (QtGui.QWidget, form.Ui_Form):
 
     def __init__ (self):
-        ''' Default constructor '''
+        """
+        Constructor.
+        """
+
         # Call constructors of superclasses
         QtGui.QWidget.__init__(self)
-        Form.Ui_Form.setupUi(self, self)
+        form.Ui_Form.setupUi(self, self)
 
 
 # Call if this is main module
