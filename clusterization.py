@@ -54,7 +54,7 @@ class Clusterization:
         self.__count_dist_matrix()
 
 
-    def enable_xml_output(self, enable = False, file_name = None):
+    def enable_xml_output(self, enable=False, file_name=None):
         """
         Enable or disable outputing calculations results into .xml table.
 
@@ -210,9 +210,6 @@ class Clusterization:
             not_draw_pts_i.remove(min_j)
 
 
-
-
-
     def draw(self):
         """
         Draws clusters with clustered_labels.
@@ -235,7 +232,6 @@ class Clusterization:
             plt.ylim(min_y - wh/12.0, min_y + wh + wh/12.0)
 
             for cluster, label in zip(self.clusters, self.clustered_labels):
-                # TODO: crab draw cluster func
                 x = [cluster[i][0] for i in range(len(cluster))]
                 y = [cluster[i][1] for i in range(len(cluster))]
                 l = [label[i] for i in range(len(label))]
@@ -445,17 +441,127 @@ class Clusterization:
         pass
 
 
-    def crab(self):
+    def crab(self, nclusters):
         """
         Implements "Crab" Clusterisation Method.
 
+        :param nclusters:
+            Number of clusters to make.
         :return:
-            list of clusters. Cluster is the list of points.
-            Point is the list of nubmers ([1.3, 3.5] or [1, 2, 3]).
+            Edges.
         """
         # todo: CRABBBB!!
 
-        p_len = len(self.pts)
+        plen = len(self.points)
+        # Not clustered points indexes
+        ncptsi = [i for i in range(plen)]
+        cptsi = []
+        edges = []
+
+        # Find min distance.
+        imin, jmin = 0, 1
+        distmin = self.dist_matrix[imin][jmin]
+        for i in range(plen - 1):
+            for j in range(i + 1, plen):
+                if self.dist_matrix[i][j] < distmin:
+                    distmin = self.dist_matrix[i][j]
+                    imin, jmin = i, j
+
+        # Add edge between points with min distance.
+        edges.append([imin, jmin, distmin])
+        cptsi.append(imin)
+        cptsi.append(jmin)
+        ncptsi.remove(imin)
+        ncptsi.remove(jmin)
+
+        while ncptsi:
+            # Find min distance between added and not
+            # added points.
+            imin = cptsi[0]
+            jmin = ncptsi[0]
+            distmin = self.dist_matrix[imin][jmin]
+            for i in cptsi:
+                for j in ncptsi:
+                    if self.dist_matrix[i][j] < distmin:
+                        distmin = self.dist_matrix[i][j]
+                        imin = i
+                        jmin = j
+
+            # Add edge between points with min distance.
+            edges.append([imin, jmin, distmin])
+            cptsi.append(jmin)
+            ncptsi.remove(jmin)
+
+        # Remove edges with maximum distance.
+        edges.sort(key = lambda i: i[2])
+        edges = edges[:-nclusters]
+
+        return edges
+
+
+    def draw_edges(self, edges):
+        """
+
+        :param edges:
+            Edges to draw.
+        :return:
+            Nothing.
+        """
+        # 2D Drawing
+        if self.dimension == 2:
+            min_x = min([self.points[i][0] for i in range(len(self.points))])
+            max_x = max([self.points[i][0] for i in range(len(self.points))])
+            min_y = min([self.points[i][1] for i in range(len(self.points))])
+            max_y = max([self.points[i][1] for i in range(len(self.points))])
+            wh = 0  # width and simul. heigth
+            if (max_x - min_x) > (max_y - min_y):
+                wh = max_x - min_x
+            else:
+                wh = max_y - min_y
+            plt.xlim(min_x - wh/12.0, min_x + wh + wh/12.0)
+            plt.ylim(min_y - wh/12.0, min_y + wh + wh/12.0)
+
+            plen = len(self.points)
+
+            # Draw points.
+            x = [self.points[i][0] for i in range(plen)]
+            y = [self.points[i][1] for i in range(plen)]
+            plt.plot(x, y, 'ro')
+
+            # Draw labels.
+            for X, Y, L in zip(x, y, self.labels):
+                plt.annotate(
+                  L, xy = (X, Y), xytext = (-10, 10),
+                  textcoords = 'offset points', ha = 'center', va = 'bottom',
+                  bbox = dict(boxstyle = 'round,pad=0.5', fc = 'yellow', alpha = 0.5))
+
+            # Draw edges.
+            for edge in edges:
+                x = [self.points[edge[i]][0] for i in [0, 1]]
+                y = [self.points[edge[i]][1] for i in [0, 1]]
+                plt.plot(x, y, 'ro-')
+
+            plt.xlabel('X')
+            plt.ylabel('Y')
+            plt.show()
+
+        # todo: 3D edge drawing
+        elif self.dimension == 3:
+            fig = plt.figure()
+            ax = fig.add_subplot(111, projection='3d')
+            n = 100
+            for cluster, label, color in zip(self.clusters, self.clustered_labels, ['r', 'g', 'b']):
+                x = [cluster[i][0] for i in range(len(cluster))]
+                y = [cluster[i][1] for i in range(len(cluster))]
+                z = [cluster[i][2] for i in range(len(cluster))]
+                ax.scatter(x, y, z, c = color)
+                # todo: line connections, labels
+
+            ax.set_xlabel('X')
+            ax.set_ylabel('Y')
+            ax.set_zlabel('Z')
+
+            plt.show()
 
 
 # Call if this is main module
@@ -473,13 +579,15 @@ if __name__ == '__main__':
            [49.8, 30.5, 1.1], [39.2, 31.0, 1.1], [41.9, 27.0, 1.1],
            [45.6, 27.5, 1.1], [38.1, 30.5, 1.1], [44.2, 30.5, 1.1]]
 
-    # labels = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10',
-    #           '11', '12', '13', '14', '15']
+    labels = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10',
+              '11', '12', '13', '14', '15']
 
-    cl = Clusterization(pts)
+    cl = Clusterization(pts, labels)
     cl.enable_xml_output(True, "output.xls")
-    cluster, clustered_labels = cl.king(24.0)
-    cl.draw()
+    # cluster, clustered_labels = cl.king(24.0)
+    # cl.draw()
+    edges = cl.crab(3)
+    cl.draw_edges(edges)
 
 
 
