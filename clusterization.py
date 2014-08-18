@@ -410,16 +410,80 @@ class Clusterization:
         return clusters
 
 
-    def k_middle(slef):
+    def k_middle(self, ptsi):
         """
         Implements K-Middle Clusterisation Method.
 
+        :param ptsi:
+            Indexes of points which will be the init. centres.
         :return:
             list of clusters. Cluster is the list of points.
             Point is the list of nubmers ([1.3, 3.5] or [1, 2, 3]).
         """
 
-        pass
+        cn = len(ptsi)  # Centres number.
+        centres = [self.points[i][:] for i in ptsi]
+        prev_clusters = [[0] for i in ptsi]
+        clusters = [[] for i in ptsi]
+
+        equal = False
+        while not equal:
+
+            prev_clusters = clusters
+            clusters = [[] for i in ptsi]
+
+            # Distribute points on clusters.
+            for i in range(len(self.points)):
+
+                # Initial minimum distance.
+                minj = 0
+                min_dist = 0.0
+                for k in range(self.dimension):
+                    min_dist += (centres[minj][k] - self.points[i][k]) ** 2
+                min_dist = math.sqrt(min_dist)
+
+                # Find min distance cluster.
+                for j in range(1, cn):
+                    tmp_dist = 0.0
+                    for k in range(self.dimension):
+                        tmp_dist += (centres[j][k] - self.points[i][k]) ** 2
+                    tmp_dist = math.sqrt(tmp_dist)
+                    if tmp_dist < min_dist:
+                        min_dist = tmp_dist
+                        minj = j
+
+                # Append point to min distance cluster.
+                clusters[minj].append(i)
+
+            # Recalc the centres.
+            for i in range(cn):
+                for k in range(self.dimension):
+                    centres[i][k] = 0.0
+                    for j in range(len(clusters[i])):
+                        centres[i][k] += self.points[clusters[i][j]][k]
+                    centres[i][k] /= len(clusters[i])
+
+            # Compare prev and current clusters.
+            for i in range(cn):
+                clusters[i].sort()
+                prev_clusters[i].sort()
+            clusters.sort()
+            prev_clusters.sort()
+            equal = True
+            for pcl, cl in zip(prev_clusters, clusters):
+                if pcl != cl:
+                    equal = False
+                    break
+
+        # Transform indexes into points.
+        clusters_i = clusters
+        clusters = [[0 for i in range(len(clusters_i[j]))] for j in range(len(clusters_i))]
+        for i in range(len(clusters_i)):
+            for j in range(len(clusters_i[i])):
+                clusters[i][j] = self.points[clusters_i[i][j]][:]
+
+        self.clusters = clusters
+        return clusters
 
 
     def trout(self, radius):
@@ -624,9 +688,11 @@ if __name__ == '__main__':
     labels = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10',
               '11', '12', '13', '14', '15']
 
-    cl = Clusterization(pts, labels)
+    cl = Clusterization(pts)
     cl.enable_xml_output(True, "output.xls")
     # cluster = cl.king(24.0)
     # cl.draw()
-    print cl.trout(3)
+    # print cl.trout(3)
+    # cl.draw()
+    print cl.k_middle([1,9,10])
     cl.draw()
