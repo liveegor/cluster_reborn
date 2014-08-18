@@ -31,7 +31,6 @@ class Clusterization:
         self.set_points(points, labels)
         self.enable_xml_output(xml_enable, xml_file_name)
         self.clusters = None
-        self.clustered_labels = None
 
 
     def set_points(self, points, labels):
@@ -168,10 +167,9 @@ class Clusterization:
         return new_last_empty_row
 
 
-    def __draw_crabbed_cluster(self, cluster, labels):
+    def __draw_crabbed_cluster(self, cluster):
         """
 
-        :param labels:
         :param cluster:
         :return:
         """
@@ -180,13 +178,13 @@ class Clusterization:
 
         dist_matrix = self.count_dist_matrix(cluster)
         p_len = len(cluster)
-        dimension = len(cluster[0])
         draw_pts_i = []
         not_draw_pts_i = [i for i in range(p_len)]
 
         tmp = not_draw_pts_i[0]
         not_draw_pts_i.remove(tmp)
         draw_pts_i.append(tmp)
+        plt.plot([cluster[tmp][0]], [cluster[tmp][1]], 'ro-')
 
         # Draw using crab algorithm.
         while not_draw_pts_i:
@@ -212,7 +210,7 @@ class Clusterization:
 
     def draw(self):
         """
-        Draws clusters with clustered_labels.
+        Draws clusters.
 
         :return:
             Nothing
@@ -220,6 +218,7 @@ class Clusterization:
 
         # 2D Drawing
         if self.dimension == 2:
+            # Make good view of aixes
             min_x = min([self.points[i][0] for i in range(len(self.points))])
             max_x = max([self.points[i][0] for i in range(len(self.points))])
             min_y = min([self.points[i][1] for i in range(len(self.points))])
@@ -231,17 +230,20 @@ class Clusterization:
             plt.xlim(min_x - wh/12.0, min_x + wh + wh/12.0)
             plt.ylim(min_y - wh/12.0, min_y + wh + wh/12.0)
 
-            for cluster, label in zip(self.clusters, self.clustered_labels):
-                x = [cluster[i][0] for i in range(len(cluster))]
-                y = [cluster[i][1] for i in range(len(cluster))]
-                l = [label[i] for i in range(len(label))]
-                self.__draw_crabbed_cluster(cluster, label)
+            # Draw clusters
+            for cluster in self.clusters:
+                self.__draw_crabbed_cluster(cluster)
 
-                for X, Y, L in zip(x, y, l):
-                    plt.annotate(
-                      L, xy = (X, Y), xytext = (-10, 10),
-                      textcoords = 'offset points', ha = 'center', va = 'bottom',
-                      bbox = dict(boxstyle = 'round,pad=0.5', fc = 'yellow', alpha = 0.5))
+            # Draw labels
+            x = [pt[0] for pt in self.points]
+            y = [pt[1] for pt in self.points]
+            l = [l for l in self.labels]
+            for X, Y, L in zip(x, y, l):
+                plt.annotate(
+                  L, xy = (X, Y), xytext = (0, 10),
+                  textcoords = 'offset points', ha = 'center', va = 'bottom',
+                  bbox = dict(boxstyle = 'round,pad=0.5', fc = 'yellow', alpha = 0.5))
+
             plt.xlabel('X')
             plt.ylabel('Y')
             plt.show()
@@ -400,21 +402,12 @@ class Clusterization:
             for j in range(len(clusters_i[i])):
                 clusters[i][j] = self.points[clusters_i[i][j]][:]
 
-        # Transform indexes into labels.
-        clustered_labels = None
-        if self.labels:
-            clustered_labels = [[0 for i in range(len(clusters_i[j]))] for j in range(len(clusters_i))]
-            for i in range(len(clusters_i)):
-                for j in range(len(clusters_i[i])):
-                    clustered_labels[i][j] = self.labels[clusters_i[i][j]][:]
-
         self.clusters = clusters
-        self.clustered_labels = clustered_labels
 
         if self.xml_enable:
             work_book.save(self.xml_file_name)
 
-        return clusters, clustered_labels
+        return clusters
 
 
     def k_middle(slef):
@@ -429,16 +422,64 @@ class Clusterization:
         pass
 
 
-    def trout(self):
+    def trout(self, radius):
         """
         Implements "Throut" Clusterisation Method.
 
+        :param radius:
+            Radius of circle.
         :return:
             list of clusters. Cluster is the list of points.
             Point is the list of nubmers ([1.3, 3.5] or [1, 2, 3]).
         """
 
-        pass
+        plen = len(self.points)
+        cptsi = []  # Clustered points indexes.
+        ncptsi = [i for i in range(plen)]
+        clusters = []
+
+        while ncptsi:
+            cluster = []
+            prev_cluster = [0]
+            centre = self.points[ncptsi[0]][:]
+
+            while cluster != prev_cluster:
+                prev_cluster = cluster
+                cluster = []
+
+                for i in ncptsi:
+                    # Find distance between centre and points.
+                    distance = 0.0
+                    for j in range(self.dimension):
+                        distance += (centre[j] - self.points[i][j]) ** 2
+                    distance = math.sqrt(distance)
+
+                    # Make decision to include into the cluster.
+                    if distance < radius:
+                        cluster.append(i)
+
+                # Recalc the centre.
+                for j in range(self.dimension):
+                    centre[j] = 0
+                    for point in cluster:
+                        centre[j] += self.points[point][j]
+                    centre[j] /= len(cluster)
+
+                cluster.sort()
+
+            clusters.append(cluster)
+            for point in cluster:
+                ncptsi.remove(point)
+
+        # Transform indexes into points.
+        clusters_i = clusters
+        clusters = [[0 for i in range(len(clusters_i[j]))] for j in range(len(clusters_i))]
+        for i in range(len(clusters_i)):
+            for j in range(len(clusters_i[i])):
+                clusters[i][j] = self.points[clusters_i[i][j]][:]
+
+        self.clusters = clusters[:]
+        return clusters
 
 
     def crab(self, nclusters):
@@ -495,6 +536,7 @@ class Clusterization:
         # Remove edges with maximum distance.
         edges.sort(key = lambda i: i[2])
         edges = edges[:-nclusters]
+
 
         return edges
 
@@ -584,15 +626,7 @@ if __name__ == '__main__':
 
     cl = Clusterization(pts, labels)
     cl.enable_xml_output(True, "output.xls")
-    # cluster, clustered_labels = cl.king(24.0)
+    # cluster = cl.king(24.0)
     # cl.draw()
-    edges = cl.crab(3)
-    cl.draw_edges(edges)
-
-
-
-    # for row in cluster:
-    #     print row
-    # if clustered_labels:
-    #     for row in clustered_labels:
-    #         print row
+    print cl.trout(3)
+    cl.draw()
