@@ -253,7 +253,7 @@ class Clusterization:
             fig = plt.figure()
             ax = fig.add_subplot(111, projection='3d')
             n = 100
-            for cluster, label, color in zip(self.clusters, self.clustered_labels, ['r', 'g', 'b']):
+            for cluster, color in zip(self.clusters, ['r', 'g', 'b', 'y']):
                 x = [cluster[i][0] for i in range(len(cluster))]
                 y = [cluster[i][1] for i in range(len(cluster))]
                 z = [cluster[i][2] for i in range(len(cluster))]
@@ -688,11 +688,7 @@ if __name__ == '__main__':
     labels = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10',
               '11', '12', '13', '14', '15']
 
-    cl = Clusterization(pts)
+    cl = Clusterization(pts3d)
     cl.enable_xml_output(True, "output.xls")
-    # cluster = cl.king(24.0)
-    # cl.draw()
-    # print cl.trout(3)
-    # cl.draw()
-    print cl.k_middle([1,9,10])
+    print cl.trout(3)
     cl.draw()

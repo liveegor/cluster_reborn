@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>404</width>
-    <height>584</height>
+    <width>430</width>
+    <height>575</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -205,6 +205,9 @@
      <property name="text">
       <string>Сохранить результаты в таблицу Excel</string>
      </property>
+     <property name="checked">
+      <bool>false</bool>
+     </property>
     </widget>
    </item>
    <item>
@@ -387,8 +390,8 @@
    <slot>close()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>291</x>
-     <y>588</y>
+     <x>292</x>
+     <y>573</y>
     </hint>
     <hint type="destinationlabel">
      <x>116</x>
