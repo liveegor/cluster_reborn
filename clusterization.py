@@ -13,23 +13,25 @@ class Clusterization:
     """
 
     def __init__(self, points = None, labels = None,
-                 xml_enable = False, xml_file_name = None):
+                 xls_enable = False, xls_file_name = None):
         """
 
         :param points:
             List of points to claster.
         :param labels:
             Labels of points. You can use it for drawing.
-        :param xml_enable:
-            Enable or disable xml output.
-        :param xml_file_name:
-            Xml output file name.
+        :param xls_enable:
+            Enable or disable xls output.
+        :param xls_file_name:
+            xls output file name.
         :return:
             Nothing
         """
 
-        self.set_points(points, labels)
-        self.enable_xml_output(xml_enable, xml_file_name)
+        if points:
+            self.set_points(points, labels)
+        if xls_enable:
+            self.xls_enable_output(xls_enable, xls_file_name)
         self.clusters = None
 
 
@@ -53,20 +55,25 @@ class Clusterization:
         self.__count_dist_matrix()
 
 
-    def enable_xml_output(self, enable=False, file_name=None):
+    def xls_enable_output(self, file_name):
         """
-        Enable or disable outputing calculations results into .xml table.
+        Enable outputing calculations results into .xls table.
 
-        :param enable:
-            True if enable, else False.
         :param file_name:
             File name to write.
-        :return:
-            Nothing.
         """
 
-        self.xml_enable = enable
-        self.xml_file_name = file_name
+        self.xls_enable = True
+        self.xls_file_name = file_name
+
+
+    def xls_disable_output(self):
+        """
+        Disable outputing calculations results into .xls table.
+        """
+
+        self.xls_enable = False
+        self.xls_file_name = None
 
 
     def count_dist_matrix(self, points):
@@ -103,7 +110,7 @@ class Clusterization:
         self.dist_matrix = self.count_dist_matrix(self.points)
 
 
-    def __write_points_into_xml_sheet (self, work_sheet, last_empty_row):
+    def __write_points_into_xls_sheet (self, work_sheet, last_empty_row):
         """
         :param work_sheet:
             Worksheet instance from xlwt library.
@@ -134,7 +141,7 @@ class Clusterization:
         return new_last_empty_row
 
 
-    def __write_dist_table_into_xml_sheet (self, work_sheet, last_empty_row):
+    def __write_dist_table_into_xls_sheet (self, work_sheet, last_empty_row):
         """
         :param work_sheet:
             Worksheet instance from xlwt library.
@@ -283,12 +290,12 @@ class Clusterization:
         non_clustered_pts_i =[i for i in range(p_len)]
         clusters_i = []
 
-        # Preparations for xml writing
+        # Preparations for xls writing
         work_book = None
         work_sheet = None
         style_table = None
         last_empty_row = 0
-        if self.xml_enable:
+        if self.xls_enable:
             work_book = xlwt.Workbook()
             work_sheet = work_book.add_sheet('Results')
             style_table = xlwt.XFStyle()
@@ -297,18 +304,18 @@ class Clusterization:
             style_table.borders.left = 1
             style_table.borders.right = 1
 
-        # Write limit into xml.
-        if self.xml_enable:
+        # Write limit into xls.
+        if self.xls_enable:
             work_sheet.write(last_empty_row, 0, u'Порог равен {}'.format(limit))
             last_empty_row += 2
 
-        # Write points into xml.
-        if self.xml_enable:
-            last_empty_row = self.__write_points_into_xml_sheet(work_sheet, last_empty_row)
+        # Write points into xls.
+        if self.xls_enable:
+            last_empty_row = self.__write_points_into_xls_sheet(work_sheet, last_empty_row)
 
-        # Write the distance matrix into xml.
-        if self.xml_enable:
-            last_empty_row = self.__write_dist_table_into_xml_sheet(work_sheet, last_empty_row)
+        # Write the distance matrix into xls.
+        if self.xls_enable:
+            last_empty_row = self.__write_dist_table_into_xls_sheet(work_sheet, last_empty_row)
 
         # While non clustered points indexes list is
         # not empty, we are clustering em.
@@ -322,7 +329,7 @@ class Clusterization:
                 non_clustered_pts_i.remove(i)
 
                 # Tell it..
-                if self.xml_enable:
+                if self.xls_enable:
                     work_sheet.write(last_empty_row, 0, u'Точка №{} осталась одна.'\
                      u'Кластер №{} будет состоять лишь из этой точки.'.format(i, cur_cluster))
                     last_empty_row += 1
@@ -344,7 +351,7 @@ class Clusterization:
             clusters_i[cur_cluster].append(i)
             non_clustered_pts_i.remove(i)
 
-            if self.xml_enable:
+            if self.xls_enable:
                 last_empty_row += 1
                 work_sheet.write(last_empty_row, 0, u'Создадим кластер №{}. ' \
                  u'Добавим туда точку №{}'.format(cur_cluster, i))
@@ -363,7 +370,7 @@ class Clusterization:
                 computations_str = '(' + computations_str[3:]
 
 
-                if self.xml_enable:
+                if self.xls_enable:
                     work_sheet.write(last_empty_row, 0, u'Рассмотрим точку №{}. ' \
                       u'Среднее расстояние до точек кластера №{} равно {}'
                       .format(j, cur_cluster, computations_str))
@@ -372,7 +379,7 @@ class Clusterization:
                 # To include or not to inclule: that is the question.
                 if middle_dist > limit:
 
-                    if self.xml_enable:
+                    if self.xls_enable:
                         work_sheet.write(last_empty_row, 0, u'Следовательно, не будем ' \
                          u'добавлять данную точку в этот кластер.')
                         last_empty_row += 1
@@ -383,14 +390,14 @@ class Clusterization:
                     clusters_i[cur_cluster].append(j)
                     non_clustered_pts_i_copy.remove(j)
 
-                    if self.xml_enable:
+                    if self.xls_enable:
                         work_sheet.write(last_empty_row, 0, u'Следовательно, добавим '\
                          u'данную точку в этот кластер.')
                         last_empty_row += 1
 
             non_clustered_pts_i = non_clustered_pts_i_copy
 
-            if self.xml_enable:
+            if self.xls_enable:
                 last_empty_row += 1
                 work_sheet.write(last_empty_row, 0, u'Состав кластера №{}: {}'
                  .format(cur_cluster, clusters_i[cur_cluster]))
@@ -404,8 +411,8 @@ class Clusterization:
 
         self.clusters = clusters
 
-        if self.xml_enable:
-            work_book.save(self.xml_file_name)
+        if self.xls_enable:
+            work_book.save(self.xls_file_name)
 
         return clusters
 
@@ -555,7 +562,6 @@ class Clusterization:
         :return:
             Edges.
         """
-        # todo: CRABBBB!!
 
         plen = len(self.points)
         # Not clustered points indexes
@@ -689,6 +695,6 @@ if __name__ == '__main__':
               '11', '12', '13', '14', '15']
 
     cl = Clusterization(pts3d)
-    cl.enable_xml_output(True, "output.xls")
+    cl.xls_enable_output(True, "output.xls")
     print cl.trout(3)
     cl.draw()

@@ -11,6 +11,7 @@ import cPickle as pickle
 
 # My.
 import form
+import clusterization
 
 
 class ClusterizationGUI (QtGui.QWidget, form.Ui_Form):
@@ -27,13 +28,20 @@ class ClusterizationGUI (QtGui.QWidget, form.Ui_Form):
         QtGui.QWidget.__init__(self)
         form.Ui_Form.setupUi(self, self)
 
-        # QT connections
+        # Clusteristation object.
+        self.cl = clusterization.Clusterization()
+
+        # QT connections.
         self.add_push_button.clicked.connect(self.add_row)
         self.del_push_button.clicked.connect(self.del_row)
         self.save_push_button.clicked.connect(self.save_points)
         self.load_push_button.clicked.connect(self.load_points)
         self.d2_radio_button.clicked.connect(self.set_2d)
         self.d3_radio_button.clicked.connect(self.set_3d)
+        self.xls_check_box.clicked.connect(self.set_xls_output)
+        self.point_xls_tool_button.clicked.connect(self.point_xls)
+        self.xls_name_line_edit.textChanged.connect(self.change_xls_fname)
+        self.methods_combo_box.currentIndexChanged.connect(self.enable_methods_stuff)
 
 
     def add_row(self):
@@ -129,6 +137,81 @@ class ClusterizationGUI (QtGui.QWidget, form.Ui_Form):
         self.points_table_widget.setColumnCount(3)
         item = QtGui.QTableWidgetItem(u'z')
         self.points_table_widget.setHorizontalHeaderItem(2, item)
+
+
+    def set_xls_output(self):
+        """
+        Sets or unsets *.xls output.
+        """
+
+        if self.xls_check_box.isChecked():
+
+            # Activate widgets to point the output file name.
+            self.xls_name_line_edit.setEnabled(True)
+            self.point_xls_tool_button.setEnabled(True)
+
+            self.cl.xls_enable_output(self.xls_name_line_edit.text().toUtf8().data())
+
+        else:
+
+            # Deactivate widgets to point the output file name.
+            self.xls_name_line_edit.setEnabled(False)
+            self.point_xls_tool_button.setEnabled(False)
+
+            self.cl.xls_disable_output()
+
+
+    def point_xls(self):
+        """
+        Point the *.xls file to output results.
+        """
+
+        fname = QtGui.QFileDialog.getSaveFileName(self, 'Save')
+        if fname:
+            self.xls_name_line_edit.setText(fname)
+            fname = fname.toUtf8().data()
+            self.cl.xls_enable_output(fname)
+
+
+    def change_xls_fname(self, fname):
+        """
+        Changet name of *.xls output file.
+
+        :param fname:
+            The new file name.
+        """
+
+        self.cl.xls_enable_output(fname.toUtf8().data())
+
+
+    def enable_methods_stuff(self, m_index):
+        """
+        Enable widgets depends on method.
+
+        :param m_index:
+            Method's index.
+        """
+
+        # At first disable all.
+        self.border_spin_box.setEnabled(False)
+        self.radius_spin_box.setEnabled(False)
+        self.clusters_number_spin_box.setEnabled(False)
+        self.centres_line_edit.setEnabled(False)
+
+        if m_index == 0:    # King
+            self.border_spin_box.setEnabled(True)
+
+        elif m_index == 1:  # K-middle
+            self.centres_line_edit.setEnabled(True)
+
+        elif m_index == 2:  # Trout
+            self.radius_spin_box.setEnabled(True)
+
+        elif m_index == 3:  # Crab
+            self.clusters_number_spin_box.setEnabled(True)
+
+        elif m_index == 4:  # Serial
+            pass
 
 # Call if this is main module
 # (not included)

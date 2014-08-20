@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'form.ui'
 #
-# Created: Mon Aug 18 19:00:59 2014
+# Created: Wed Aug 20 17:33:28 2014
 #      by: PyQt4 UI code generator 4.9.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -107,6 +107,7 @@ class Ui_Form(object):
         self.gridLayout.addLayout(self.verticalLayout_2, 0, 0, 1, 1)
         self.verticalLayout_3.addWidget(self.groupBox)
         self.xls_check_box = QtGui.QCheckBox(Form)
+        self.xls_check_box.setChecked(False)
         self.xls_check_box.setObjectName(_fromUtf8("xls_check_box"))
         self.verticalLayout_3.addWidget(self.xls_check_box)
         self.horizontalLayout_2 = QtGui.QHBoxLayout()
@@ -115,11 +116,13 @@ class Ui_Form(object):
         self.label_6.setObjectName(_fromUtf8("label_6"))
         self.horizontalLayout_2.addWidget(self.label_6)
         self.xls_name_line_edit = QtGui.QLineEdit(Form)
+        self.xls_name_line_edit.setEnabled(False)
         self.xls_name_line_edit.setObjectName(_fromUtf8("xls_name_line_edit"))
         self.horizontalLayout_2.addWidget(self.xls_name_line_edit)
-        self.open_xls_tool_button = QtGui.QToolButton(Form)
-        self.open_xls_tool_button.setObjectName(_fromUtf8("open_xls_tool_button"))
-        self.horizontalLayout_2.addWidget(self.open_xls_tool_button)
+        self.point_xls_tool_button = QtGui.QToolButton(Form)
+        self.point_xls_tool_button.setEnabled(False)
+        self.point_xls_tool_button.setObjectName(_fromUtf8("point_xls_tool_button"))
+        self.horizontalLayout_2.addWidget(self.point_xls_tool_button)
         self.verticalLayout_3.addLayout(self.horizontalLayout_2)
         self.formLayout = QtGui.QFormLayout()
         self.formLayout.setObjectName(_fromUtf8("formLayout"))
@@ -144,18 +147,21 @@ class Ui_Form(object):
         self.label_3.setObjectName(_fromUtf8("label_3"))
         self.formLayout.setWidget(2, QtGui.QFormLayout.LabelRole, self.label_3)
         self.radius_spin_box = QtGui.QDoubleSpinBox(Form)
+        self.radius_spin_box.setEnabled(False)
         self.radius_spin_box.setObjectName(_fromUtf8("radius_spin_box"))
         self.formLayout.setWidget(2, QtGui.QFormLayout.FieldRole, self.radius_spin_box)
         self.label_4 = QtGui.QLabel(Form)
         self.label_4.setObjectName(_fromUtf8("label_4"))
         self.formLayout.setWidget(3, QtGui.QFormLayout.LabelRole, self.label_4)
-        self.clasters_number_spin_box = QtGui.QSpinBox(Form)
-        self.clasters_number_spin_box.setObjectName(_fromUtf8("clasters_number_spin_box"))
-        self.formLayout.setWidget(3, QtGui.QFormLayout.FieldRole, self.clasters_number_spin_box)
+        self.clusters_number_spin_box = QtGui.QSpinBox(Form)
+        self.clusters_number_spin_box.setEnabled(False)
+        self.clusters_number_spin_box.setObjectName(_fromUtf8("clusters_number_spin_box"))
+        self.formLayout.setWidget(3, QtGui.QFormLayout.FieldRole, self.clusters_number_spin_box)
         self.label_5 = QtGui.QLabel(Form)
         self.label_5.setObjectName(_fromUtf8("label_5"))
         self.formLayout.setWidget(4, QtGui.QFormLayout.LabelRole, self.label_5)
         self.centres_line_edit = QtGui.QLineEdit(Form)
+        self.centres_line_edit.setEnabled(False)
         self.centres_line_edit.setObjectName(_fromUtf8("centres_line_edit"))
         self.formLayout.setWidget(4, QtGui.QFormLayout.FieldRole, self.centres_line_edit)
         self.verticalLayout_3.addLayout(self.formLayout)
@@ -189,8 +195,8 @@ class Ui_Form(object):
         Form.setTabOrder(self.d3_radio_button, self.methods_combo_box)
         Form.setTabOrder(self.methods_combo_box, self.border_spin_box)
         Form.setTabOrder(self.border_spin_box, self.radius_spin_box)
-        Form.setTabOrder(self.radius_spin_box, self.clasters_number_spin_box)
-        Form.setTabOrder(self.clasters_number_spin_box, self.centres_line_edit)
+        Form.setTabOrder(self.radius_spin_box, self.clusters_number_spin_box)
+        Form.setTabOrder(self.clusters_number_spin_box, self.centres_line_edit)
         Form.setTabOrder(self.centres_line_edit, self.exit_push_button)
         Form.setTabOrder(self.exit_push_button, self.count_push_button)
 
@@ -214,7 +220,7 @@ class Ui_Form(object):
         self.d3_radio_button.setText(QtGui.QApplication.translate("Form", "Трехмерная", None, QtGui.QApplication.UnicodeUTF8))
         self.xls_check_box.setText(QtGui.QApplication.translate("Form", "Сохранить результаты в таблицу Excel", None, QtGui.QApplication.UnicodeUTF8))
         self.label_6.setText(QtGui.QApplication.translate("Form", "Путь к таблице: ", None, QtGui.QApplication.UnicodeUTF8))
-        self.open_xls_tool_button.setText(QtGui.QApplication.translate("Form", "...", None, QtGui.QApplication.UnicodeUTF8))
+        self.point_xls_tool_button.setText(QtGui.QApplication.translate("Form", "...", None, QtGui.QApplication.UnicodeUTF8))
         self.label.setText(QtGui.QApplication.translate("Form", "Метод:", None, QtGui.QApplication.UnicodeUTF8))
         self.methods_combo_box.setToolTip(QtGui.QApplication.translate("Form", "<html><head/><body><p>Выберите метод кластеризации</p></body></html>", None, QtGui.QApplication.UnicodeUTF8))
         self.methods_combo_box.setItemText(0, QtGui.QApplication.translate("Form", "Кинга", None, QtGui.QApplication.UnicodeUTF8))
