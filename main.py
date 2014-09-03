@@ -42,6 +42,7 @@ class ClusterizationGUI (QtGui.QWidget, form.Ui_Form):
         self.point_xls_tool_button.clicked.connect(self.point_xls)
         self.xls_name_line_edit.textChanged.connect(self.change_xls_fname)
         self.methods_combo_box.currentIndexChanged.connect(self.enable_methods_stuff)
+        # todo: count button cliced
 
 
     def add_row(self):

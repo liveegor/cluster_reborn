@@ -3,8 +3,10 @@
 
 from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+from mpl_toolkits.mplot3d import proj3d
 import math
 import xlwt
+
 
 class Clusterization:
     """
@@ -128,6 +130,9 @@ class Clusterization:
         style_table.borders.left = 1
         style_table.borders.right = 1
 
+        work_sheet.write(new_last_empty_row, 0, u'Точки: ')
+        new_last_empty_row += 1
+
         for i in range(1, self.dimension + 1):
             work_sheet.write(new_last_empty_row + i, 0, u'x{}'.format(i), style_table)
         for i in range(p_len):
@@ -174,14 +179,14 @@ class Clusterization:
         return new_last_empty_row
 
 
-    def __draw_crabbed_cluster(self, cluster):
+    def __draw_crabbed_cluster(self, cluster, ax=None):
         """
+        Draw cluster using "Crab" algorithm.
 
+        :param ax:
         :param cluster:
         :return:
         """
-
-        # todo: add 3d drawng in this func
 
         dist_matrix = self.count_dist_matrix(cluster)
         p_len = len(cluster)
@@ -191,10 +196,14 @@ class Clusterization:
         tmp = not_draw_pts_i[0]
         not_draw_pts_i.remove(tmp)
         draw_pts_i.append(tmp)
-        plt.plot([cluster[tmp][0]], [cluster[tmp][1]], 'ro-')
+        if self.dimension == 2:
+            plt.plot([cluster[tmp][0]], [cluster[tmp][1]], 'ro-')
+        elif self.dimension == 3:
+            ax.scatter([cluster[tmp][0]], [cluster[tmp][1]], [cluster[tmp][2]], 'ro-')
 
-        # Draw using crab algorithm.
         while not_draw_pts_i:
+
+            # Find point with minimum distance to drew points.
             min_i = draw_pts_i[0]
             min_j = not_draw_pts_i[0]
             min_distance = dist_matrix[min_i][min_j]
@@ -208,10 +217,14 @@ class Clusterization:
             # Draw points with min distance.
             x = [cluster[i][0] for i in (min_i, min_j)]
             y = [cluster[i][1] for i in (min_i, min_j)]
-            plt.plot(x, y, 'ro-')
-            draw_pts_i.append(min_i)
+            if self.dimension == 2:
+                plt.plot(x, y, 'ro-')
+            elif self.dimension == 3:
+                z = [cluster[i][2] for i in (min_i, min_j)]
+                ax.plot_wireframe(x, y, z)
+                ax.scatter(x, y, z)
+
             draw_pts_i.append(min_j)
-            draw_pts_i.remove(min_i)
             not_draw_pts_i.remove(min_j)
 
 
@@ -259,13 +272,8 @@ class Clusterization:
         elif self.dimension == 3:
             fig = plt.figure()
             ax = fig.add_subplot(111, projection='3d')
-            n = 100
-            for cluster, color in zip(self.clusters, ['r', 'g', 'b', 'y']):
-                x = [cluster[i][0] for i in range(len(cluster))]
-                y = [cluster[i][1] for i in range(len(cluster))]
-                z = [cluster[i][2] for i in range(len(cluster))]
-                ax.scatter(x, y, z, c = color)
-                # todo: line connections, labels
+            for cluster in self.clusters:
+                self.__draw_crabbed_cluster(cluster, ax)
 
             ax.set_xlabel('X')
             ax.set_ylabel('Y')
@@ -433,11 +441,61 @@ class Clusterization:
         prev_clusters = [[0] for i in ptsi]
         clusters = [[] for i in ptsi]
 
+        # Preparations for xls writing
+        wb = None
+        ws = None
+        s_table = None
+        row = 0
+        step = 1
+        if self.xls_enable:
+            wb = xlwt.Workbook()
+            ws = wb.add_sheet('Results')
+            s_table = xlwt.XFStyle()
+            s_table.borders.bottom = 1
+            s_table.borders.top = 1
+            s_table.borders.left = 1
+            s_table.borders.right = 1
+
+        # Write initial centres into xls.
+        if self.xls_enable:
+            ws.write(row, 0, u'Начальные центры кластеров:')
+            row += 1
+            for j in range(self.dimension):
+                ws.write(row + j + 1, 0, u'x{}'.format(j + 1), s_table)
+            for i in range(cn):
+                ws.write(row, i + 1, u'{}'.format(i), s_table)
+                for j in range(self.dimension):
+                    ws.write(row + j + 1, i + 1, u'{}'.format(self.points[ptsi[i]][j]), s_table)
+            row += (self.dimension + 2)
+
+        # Write points into xls.
+        if self.xls_enable:
+            row = self.__write_points_into_xls_sheet(ws, row)
+
+        # Write the distance matrix into xls.
+        if self.xls_enable:
+            row = self.__write_dist_table_into_xls_sheet(ws, row)
+
         equal = False
         while not equal:
 
             prev_clusters = clusters
             clusters = [[] for i in ptsi]
+
+            if self.xls_enable:
+                row += 1
+                ws.write(row, 0, u'Итерация №{}'.format(step))
+                step += 1
+                row += 2
+
+           # Write of distaces between points and clusters centres.
+            if self.xls_enable:
+                ws.write(row, 0, u'Матрица расстояний между точками и центрами кластеров:')
+                row += 1
+                for i in range(len(self.points)):
+                    ws.write(row, i + 1, u'{}'.format(i), s_table)
+                for j in range(cn):
+                    ws.write(row + j + 1, 0, u'{}'.format(j), s_table)
 
             # Distribute points on clusters.
             for i in range(len(self.points)):
@@ -449,6 +507,9 @@ class Clusterization:
                     min_dist += (centres[minj][k] - self.points[i][k]) ** 2
                 min_dist = math.sqrt(min_dist)
 
+                if self.xls_enable:
+                    ws.write(row + 1, i + 1, u'{}'.format(min_dist), s_table)
+
                 # Find min distance cluster.
                 for j in range(1, cn):
                     tmp_dist = 0.0
@@ -459,8 +520,22 @@ class Clusterization:
                         min_dist = tmp_dist
                         minj = j
 
+                    if self.xls_enable:
+                        ws.write(row + j + 1, i + 1, u'{}'.format(tmp_dist), s_table)
+
                 # Append point to min distance cluster.
                 clusters[minj].append(i)
+
+            # Write clusters view.
+            if self.xls_enable:
+                row += 5
+                ws.write(row, 0, u'Таким образом, получились следующие кластеры:')
+                row += 1
+                for j in range(cn):
+                    ws.write(row + j, 0, u'{}'.format(j))
+                for cluster in clusters:
+                    ws.write(row, 1, u'{}'.format(cluster))
+                    row += 1
 
             # Recalc the centres.
             for i in range(cn):
@@ -469,6 +544,19 @@ class Clusterization:
                     for j in range(len(clusters[i])):
                         centres[i][k] += self.points[clusters[i][j]][k]
                     centres[i][k] /= len(clusters[i])
+
+            # Write recalculated centres into xls.
+            if self.xls_enable:
+                row += 1
+                ws.write(row, 0, u'Новые центры кластеров: ')
+                row += 1
+                for j in range(self.dimension):
+                    ws.write(row + j + 1, 0, u'x{}'.format(j + 1), s_table)
+                for i in range(cn):
+                    ws.write(row, i + 1, u'{}'.format(i), s_table)
+                    for j in range(self.dimension):
+                        ws.write(row + j + 1, i + 1, u'{}'.format(centres[i][j]), s_table)
+                row += (self.dimension + 2)
 
             # Compare prev and current clusters.
             for i in range(cn):
@@ -482,12 +570,24 @@ class Clusterization:
                     equal = False
                     break
 
+            # Write comparation result.
+            if self.xls_enable:
+                if not equal:
+                    ws.write(row, 0, u'Предыдущий кластер не равен текущему, продолжаем вычисления')
+                else:
+                    ws.write(row, 0, u'Предыдущий кластер равен текущему, вычисления закончены')
+                row += 2
+
         # Transform indexes into points.
         clusters_i = clusters
         clusters = [[0 for i in range(len(clusters_i[j]))] for j in range(len(clusters_i))]
         for i in range(len(clusters_i)):
             for j in range(len(clusters_i[i])):
                 clusters[i][j] = self.points[clusters_i[i][j]][:]
+
+        # Save xls.
+        if self.xls_enable:
+            wb.save(self.xls_file_name)
 
         self.clusters = clusters
         return clusters
@@ -509,25 +609,85 @@ class Clusterization:
         ncptsi = [i for i in range(plen)]
         clusters = []
 
+        # Preparations for xls writing
+        wb = None
+        ws = None
+        s_table = None
+        row = 0
+        steps = [0, 1]
+        if self.xls_enable:
+            wb = xlwt.Workbook()
+            ws = wb.add_sheet('Results')
+            s_table = xlwt.XFStyle()
+            s_table.borders.bottom = 1
+            s_table.borders.top = 1
+            s_table.borders.left = 1
+            s_table.borders.right = 1
+
+        # Write initial centres into xls.
+        if self.xls_enable:
+            ws.write(row, 0, u'Радиус равен {}'.format(radius))
+            row += 2
+
+        # Write points into xls.
+        if self.xls_enable:
+            row = self.__write_points_into_xls_sheet(ws, row)
+
+        # Write the distance matrix into xls.
+        if self.xls_enable:
+            row = self.__write_dist_table_into_xls_sheet(ws, row)
+
         while ncptsi:
             cluster = []
-            prev_cluster = [0]
             centre = self.points[ncptsi[0]][:]
+            prev_centre = self.points[ncptsi[0]][:]
+            prev_centre[0] += 1     # To be different to centre.
 
-            while cluster != prev_cluster:
-                prev_cluster = cluster
+            if self.xls_enable:
+                row += 1
+                ws.write(row, 0, u'Образуем кластер №{}'.format(steps[0]))
+                steps[0] += 1
+                steps[1] = 1
+                row += 1
+                ws.write(row, 0, u'Поместим центр сферы в точку {}'.format(ncptsi[0]))
+                ws.write(row + 1, 0, u'Центр сферы: {}'.format(self.points[ncptsi[0]]))
+                row += 3
+
+
+            while centre != prev_centre:
+                prev_centre = centre[:]
                 cluster = []
 
+                # Begining of table of distances between points and sphere centre.
+                if self.xls_enable:
+                    ws.write(row, 0, u'Итерация №{}'.format(steps[1]))
+                    steps[1] += 1
+                    ws.write(row + 1, 0, u'Расстояния точек до центра сферы:')
+                    for i in range(plen):
+                        ws.write(row + 2, i, u'{}'.format(i), s_table)
+                    row += 3
+
                 for i in ncptsi:
+
                     # Find distance between centre and points.
                     distance = 0.0
                     for j in range(self.dimension):
                         distance += (centre[j] - self.points[i][j]) ** 2
                     distance = math.sqrt(distance)
 
+                    # Ending of table of distances between points and sphere centre.
+                    if self.xls_enable:
+                        ws.write(row, i, u'{}'.format(distance), s_table)
+
                     # Make decision to include into the cluster.
                     if distance < radius:
                         cluster.append(i)
+
+                # Write cluster into xls.
+                if self.xls_enable:
+                    row += 1
+                    ws.write(row, 0, u'В итоге получился кластер: {}'.format(cluster))
+                    row += 1
 
                 # Recalc the centre.
                 for j in range(self.dimension):
@@ -536,11 +696,32 @@ class Clusterization:
                         centre[j] += self.points[point][j]
                     centre[j] /= len(cluster)
 
+                # Write new sphere centre into xls.
+                if self.xls_enable:
+                    ws.write(row, 0, u'Новый центр сферы: {}'.format(centre))
+                    row += 1
+
                 cluster.sort()
+
+                if self.xls_enable:
+                    if centre != prev_centre:
+                        ws.write(row, 0, u'Новый центр сферы не равен предыдущему, продолжим вычисления')
+                    else:
+                        ws.write(row, 0, u'Новый центр сферы равен предыдущему, кластер сформирован')
+                    row += 2
 
             clusters.append(cluster)
             for point in cluster:
                 ncptsi.remove(point)
+
+        # Write conclusion.
+        if self.xls_enable:
+            row += 2
+            ws.write(row, 0, u'В итоге получились кластеры:')
+            row += 1
+            for i in range(len(clusters)):
+                ws.write(row, 0, u'{}'.format(clusters[i]))
+                row += 1
 
         # Transform indexes into points.
         clusters_i = clusters
@@ -548,6 +729,10 @@ class Clusterization:
         for i in range(len(clusters_i)):
             for j in range(len(clusters_i[i])):
                 clusters[i][j] = self.points[clusters_i[i][j]][:]
+
+        # Save xls.
+        if self.xls_enable:
+            wb.save(self.xls_file_name)
 
         self.clusters = clusters[:]
         return clusters
@@ -562,6 +747,8 @@ class Clusterization:
         :return:
             Edges.
         """
+
+        # todo: xls 3
 
         plen = len(self.points)
         # Not clustered points indexes
@@ -605,7 +792,7 @@ class Clusterization:
 
         # Remove edges with maximum distance.
         edges.sort(key = lambda i: i[2])
-        edges = edges[:-nclusters]
+        edges = edges[:-(nclusters - 1)]
 
 
         return edges
@@ -657,17 +844,43 @@ class Clusterization:
             plt.ylabel('Y')
             plt.show()
 
-        # todo: 3D edge drawing
+        # 3D Drawing
         elif self.dimension == 3:
+
             fig = plt.figure()
             ax = fig.add_subplot(111, projection='3d')
-            n = 100
-            for cluster, label, color in zip(self.clusters, self.clustered_labels, ['r', 'g', 'b']):
-                x = [cluster[i][0] for i in range(len(cluster))]
-                y = [cluster[i][1] for i in range(len(cluster))]
-                z = [cluster[i][2] for i in range(len(cluster))]
-                ax.scatter(x, y, z, c = color)
-                # todo: line connections, labels
+            labels = []
+            x2, y2 = 0, 0
+
+            # Draw points.
+            for point, l in zip(self.points, self.labels):
+                ax.scatter([point[0]], [point[1]], [point[2]])
+
+            #     # Draw labels.
+            #     x2, y2, _ = proj3d.proj_transform(point[0], point[1], point[2], ax.get_proj())
+            #     labels.append(plt.annotate(
+            #         l,
+            #         xy = (x2, y2), xytext = (-20, 20),
+            #         textcoords = 'offset points', ha = 'right', va = 'bottom',
+            #         bbox = dict(boxstyle = 'round,pad=0.5', fc = 'yellow', alpha = 0.5),
+            #         arrowprops = dict(arrowstyle = '->', connectionstyle = 'arc3,rad=0')))
+            #
+            # # Recount labels position.
+            # def update_position(e):
+            #     for point, label in zip(self.points, labels):
+            #         x2, y2, _ = proj3d.proj_transform(point[0], point[1], point[2], ax.get_proj())
+            #         label.xy = x2, y2
+            #         label.update_positions(fig.canvas.renderer)
+            #         fig.canvas.draw()
+            # fig.canvas.mpl_connect('button_release_event', update_position)
+
+            # Draw edges.
+            for edge in edges:
+                x = [self.points[edge[i]][0] for i in (0, 1)]
+                y = [self.points[edge[i]][1] for i in (0, 1)]
+                z = [self.points[edge[i]][2] for i in (0, 1)]
+                ax.plot_wireframe(x, y, z)
+                ax.scatter(x, y, z)
 
             ax.set_xlabel('X')
             ax.set_ylabel('Y')
@@ -685,16 +898,19 @@ if __name__ == '__main__':
            [49.8, 30.5], [39.2, 31.0], [41.9, 27.0],
            [45.6, 27.5], [38.1, 30.5], [44.2, 30.5]]
 
-    pts3d = [[41.5, 26.5, 1.1], [42.3, 24.5, 1.1], [42.0, 24.5, 1.1],
-           [38.2, 25.5, 1.1], [39.3, 26.0, 1.1], [41.5, 29.5, 1.1],
-           [45.5, 30.0, 1.1], [39.5, 30.5, 1.1], [42.0, 30.5, 1.1],
-           [49.8, 30.5, 1.1], [39.2, 31.0, 1.1], [41.9, 27.0, 1.1],
-           [45.6, 27.5, 1.1], [38.1, 30.5, 1.1], [44.2, 30.5, 1.1]]
+    pts3d = [[41.5, 26.5, 1.1], [42.3, 24.5, 1.1], [42.0, 24.5, 4.1],
+             [38.2, 25.5, 2.1], [39.3, 26.0, 2.1], [41.5, 29.5, 3.1],
+             [45.5, 30.0, 3.1], [39.5, 30.5, 3.1], [42.0, 30.5, 2.1],
+             [49.8, 30.5, 4.1], [39.2, 31.0, 2.1], [41.9, 27.0, 1.1],
+             [45.6, 27.5, 2.1], [38.1, 30.5, 1.1], [44.2, 30.5, 1.1]]
 
     labels = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10',
               '11', '12', '13', '14', '15']
 
     cl = Clusterization(pts3d)
-    cl.xls_enable_output(True, "output.xls")
-    print cl.trout(3)
-    cl.draw()
+    cl.xls_enable_output("output.xls")
+    cl.trout(4)
+    # cl.draw()
+    # edges = cl.crab(2)
+    # print edges
+    # cl.draw_edges(edges)
