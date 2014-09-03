@@ -748,13 +748,39 @@ class Clusterization:
             Edges.
         """
 
-        # todo: xls 3
-
         plen = len(self.points)
         # Not clustered points indexes
         ncptsi = [i for i in range(plen)]
         cptsi = []
         edges = []
+
+        # Preparations for xls writing
+        wb = None
+        ws = None
+        s_table = None
+        row = 0
+        step = 1
+        if self.xls_enable:
+            wb = xlwt.Workbook()
+            ws = wb.add_sheet('Results')
+            s_table = xlwt.XFStyle()
+            s_table.borders.bottom = 1
+            s_table.borders.top = 1
+            s_table.borders.left = 1
+            s_table.borders.right = 1
+
+        # Write initial centres into xls.
+        if self.xls_enable:
+            ws.write(row, 0, u'Заданное число кластеров: {}'.format(nclusters))
+            row += 2
+
+        # Write points into xls.
+        if self.xls_enable:
+            row = self.__write_points_into_xls_sheet(ws, row)
+
+        # Write the distance matrix into xls.
+        if self.xls_enable:
+            row = self.__write_dist_table_into_xls_sheet(ws, row)
 
         # Find min distance.
         imin, jmin = 0, 1
@@ -772,6 +798,17 @@ class Clusterization:
         ncptsi.remove(imin)
         ncptsi.remove(jmin)
 
+        # Write min distance into xls.
+        if self.xls_enable:
+            ws.write(row, 0, u'Две самые ближайшие точки: {} и {} ({})'.format(imin, jmin, distmin))
+            row += 2
+            ws.write(row, 0, u'Найдем из оставшихся точек ближайшую к уже рассмотренным.')
+            row += 1
+            ws.write(row, 0, u'Рассм.', s_table)
+            ws.write(row, 1, u'Ост.', s_table)
+            ws.write(row, 2, u'Расст.', s_table)
+            row += 1
+
         while ncptsi:
             # Find min distance between added and not
             # added points.
@@ -785,6 +822,13 @@ class Clusterization:
                         imin = i
                         jmin = j
 
+            # Write min distance into xls.
+            if self.xls_enable:
+                ws.write(row, 0, u'{}'.format(imin), s_table)
+                ws.write(row, 1, u'{}'.format(jmin), s_table)
+                ws.write(row, 2, u'{}'.format(distmin), s_table)
+                row += 1
+
             # Add edge between points with min distance.
             edges.append([imin, jmin, distmin])
             cptsi.append(jmin)
@@ -792,8 +836,27 @@ class Clusterization:
 
         # Remove edges with maximum distance.
         edges.sort(key = lambda i: i[2])
+        to_remove = edges[-(nclusters - 1):]
         edges = edges[:-(nclusters - 1)]
 
+        # Write deleted edges into xls.
+        if self.xls_enable:
+            row += 1
+            ws.write(row, 0, u'Удалим самые длинные ребра между вершинами в количестве {} шт.'.format(nclusters - 1))
+            row += 1
+            ws.write(row, 0, u'Верш.', s_table)
+            ws.write(row, 1, u'Верш.', s_table)
+            ws.write(row, 2, u'Расст.', s_table)
+            row += 1
+            for edge in to_remove:
+                ws.write(row, 0, u'{}'.format(edge[0]), s_table)
+                ws.write(row, 1, u'{}'.format(edge[1]), s_table)
+                ws.write(row, 2, u'{}'.format(edge[2]), s_table)
+                row += 1
+
+        # Save xls.
+        if self.xls_enable:
+            wb.save(self.xls_file_name)
 
         return edges
 
@@ -909,8 +972,7 @@ if __name__ == '__main__':
 
     cl = Clusterization(pts3d)
     cl.xls_enable_output("output.xls")
-    cl.trout(4)
+    # cl.trout(4)
     # cl.draw()
-    # edges = cl.crab(2)
-    # print edges
-    # cl.draw_edges(edges)
+    edges = cl.crab(2)
+    cl.draw_edges(edges)
