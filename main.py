@@ -8,6 +8,8 @@ import sys
 # Not standart;
 from PyQt4 import QtCore, QtGui
 import cPickle as pickle
+from hcluster import pdist, linkage, dendrogram
+import matplotlib.pyplot as plt
 
 # My.
 import form
@@ -44,6 +46,16 @@ class ClusterizationGUI (QtGui.QWidget, form.Ui_Form):
         self.methods_combo_box.currentIndexChanged.connect(self.enable_methods_stuff)
         self.count_push_button.clicked.connect(self.count)
 
+    def __recount_points_numeration(self):
+        """
+        Recount numeration of points in the table's vertical header.
+        """
+
+        row = self.points_table_widget.rowCount()
+        labels = QtCore.QStringList()
+        for i in range(row + 1):
+            labels << QtCore.QString("%1").arg(i)
+        self.points_table_widget.setVerticalHeaderLabels(labels)
 
     def add_row(self):
         """
@@ -52,13 +64,7 @@ class ClusterizationGUI (QtGui.QWidget, form.Ui_Form):
 
         row = self.points_table_widget.rowCount()
         self.points_table_widget.insertRow(row)
-
-        # Recount numeration.
-        labels = QtCore.QStringList()
-        for i in range(row + 1):
-            labels << QtCore.QString("%1").arg(i)
-        self.points_table_widget.setVerticalHeaderLabels(labels)
-
+        self.__recount_points_numeration()
 
     def del_row(self):
         """
@@ -67,13 +73,7 @@ class ClusterizationGUI (QtGui.QWidget, form.Ui_Form):
 
         row_i = self.points_table_widget.currentRow()
         self.points_table_widget.removeRow(row_i)
-
-        # Recount numeration.
-        rowsn = self.points_table_widget.rowCount()
-        labels = QtCore.QStringList()
-        for i in range(rowsn + 1):
-            labels << QtCore.QString("%1").arg(i)
-        self.points_table_widget.setVerticalHeaderLabels(labels)
+        self.__recount_points_numeration()
 
 
     def save_points(self):
@@ -125,6 +125,7 @@ class ClusterizationGUI (QtGui.QWidget, form.Ui_Form):
                 item = QtGui.QTableWidgetItem(QtCore.QString.number(points[i][j]))
                 self.points_table_widget.setItem(i, j, item)
 
+        self.__recount_points_numeration()
 
     def set_2d(self):
         """
@@ -251,8 +252,6 @@ class ClusterizationGUI (QtGui.QWidget, form.Ui_Form):
 
         method = self.methods_combo_box.currentIndex()
 
-        # todo :threading
-
         # King
         if method == 0:
 
@@ -302,8 +301,10 @@ class ClusterizationGUI (QtGui.QWidget, form.Ui_Form):
 
         # Serial
         elif method == 4:
-            # todo: serial
-            pass
+            y = pdist(points)
+            z = linkage(y)
+            dendrogram(z)
+            plt.show()
 
 # Call if this is main module
 # (not included)

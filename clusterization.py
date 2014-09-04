@@ -249,8 +249,8 @@ class Clusterization:
             if (max_x - min_x) > (max_y - min_y):
                 wh = max_x - min_x
             else: wh = max_y - min_y
-            plt.xlim(min_x - wh/12.0, min_x + wh + wh/12.0)
-            plt.ylim(min_y - wh/12.0, min_y + wh + wh/12.0)
+            plt.xlim(min_x - wh/12.0, (min_x + wh + wh/12.0) * 1.07)
+            plt.ylim(min_y - wh/12.0, (min_y + wh + wh/12.0))
 
             # Draw clusters
             for cluster in self.clusters:
@@ -430,17 +430,25 @@ class Clusterization:
                  .format(cur_cluster, clusters_i[cur_cluster]))
                 last_empty_row += 2
 
+        # Write conclusion.
+        if self.xls_enable:
+            last_empty_row += 2
+            work_sheet.write(last_empty_row, 0, u'В итоге получились кластеры:')
+            last_empty_row += 1
+            for i in range(len(clusters_i)):
+                work_sheet.write(last_empty_row, 0, u'{}'.format(clusters_i[i]))
+                last_empty_row += 1
+
         # Transform indexes into points.
         clusters = [[0 for i in range(len(clusters_i[j]))] for j in range(len(clusters_i))]
         for i in range(len(clusters_i)):
             for j in range(len(clusters_i[i])):
                 clusters[i][j] = self.points[clusters_i[i][j]][:]
 
-        self.clusters = clusters
-
         if self.xls_enable:
             work_book.save(self.xls_file_name)
 
+        self.clusters = clusters
         return clusters
 
 
@@ -597,6 +605,15 @@ class Clusterization:
                     ws.write(row, 0, u'Предыдущий кластер равен текущему, вычисления закончены')
                 row += 2
 
+        # Write conclusion.
+        if self.xls_enable:
+            row += 2
+            ws.write(row, 0, u'В итоге получились кластеры:')
+            row += 1
+            for i in range(len(clusters)):
+                ws.write(row, 0, u'{}'.format(clusters[i]))
+                row += 1
+
         # Transform indexes into points.
         clusters_i = clusters
         clusters = [[0 for i in range(len(clusters_i[j]))] for j in range(len(clusters_i))]
@@ -627,6 +644,7 @@ class Clusterization:
         cptsi = []  # Clustered points indexes.
         ncptsi = [i for i in range(plen)]
         clusters = []
+        centres = []
 
         # Preparations for xls writing
         wb = None
@@ -733,6 +751,9 @@ class Clusterization:
             for point in cluster:
                 ncptsi.remove(point)
 
+            # Append centre to draw.
+            centres.append(centre)
+
         # Write conclusion.
         if self.xls_enable:
             row += 2
@@ -752,6 +773,14 @@ class Clusterization:
         # Save xls.
         if self.xls_enable:
             wb.save(self.xls_file_name)
+
+        if self.dimension == 2:
+            # Draw circles.
+            fig = plt.figure()
+            ax = fig.add_subplot(1, 1, 1)
+            for c in centres:
+                circ = plt.Circle((c[0], c[1]), radius=radius, fill=False)
+                ax.add_patch(circ)
 
         self.clusters = clusters[:]
         return clusters
@@ -992,11 +1021,17 @@ if __name__ == '__main__':
     labels = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10',
               '11', '12', '13', '14', '15']
 
-    cl = Clusterization(pts3d)
+    cl = Clusterization(pts)
     cl.xls_enable_output("output.xls")
 
-    # edges = cl.crab(1)
-    # cl.draw_edges(edges)
+    # cl.king(5)
+    # cl.draw()
 
-    cl.k_middle([1,5,7])
-    cl.draw()
+    # cl.k_middle([1,2,3])
+    # cl.draw()
+
+    # cl.trout(4.2)
+    # cl.draw()
+
+    edges = cl.crab(3)
+    cl.draw_edges(edges)
