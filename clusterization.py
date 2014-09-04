@@ -34,10 +34,12 @@ class Clusterization:
             self.set_points(points, labels)
         if xls_enable:
             self.xls_enable_output(xls_enable, xls_file_name)
+        else:
+            self.xls_disable_output()
         self.clusters = None
 
 
-    def set_points(self, points, labels):
+    def set_points(self, points, labels=None):
         """
 
         :param labels:
@@ -270,10 +272,32 @@ class Clusterization:
 
         # 3D Drawing
         elif self.dimension == 3:
+
             fig = plt.figure()
             ax = fig.add_subplot(111, projection='3d')
+
             for cluster in self.clusters:
                 self.__draw_crabbed_cluster(cluster, ax)
+
+            # Draw labels.
+            labels = []
+            for point, l in zip(self.points, self.labels):
+
+                x2, y2, _ = proj3d.proj_transform(point[0], point[1], point[2], ax.get_proj())
+                labels.append(plt.annotate(
+                    l,
+                    xy = (x2, y2), xytext = (-10, 10),
+                    textcoords = 'offset points', ha = 'right', va = 'bottom',
+                    bbox = dict(boxstyle = 'round,pad=0.5', fc = 'yellow', alpha = 0.5)))
+
+            # Recount labels position.
+            def update_position(e):
+                for point, label in zip(self.points, labels):
+                    x2, y2, _ = proj3d.proj_transform(point[0], point[1], point[2], ax.get_proj())
+                    label.xy = x2, y2
+                    label.update_positions(fig.canvas.renderer)
+                    fig.canvas.draw()
+            fig.canvas.mpl_connect('button_release_event', update_position)
 
             ax.set_xlabel('X')
             ax.set_ylabel('Y')
@@ -344,30 +368,38 @@ class Clusterization:
                 break
 
             # Find nearest points.
-            min_i = None
-            min_dist = self.dist_matrix[0][1]
-            for i in range(p_len - 1):
-                for j in range(i + 1, p_len):
-                    if min_dist > self.dist_matrix[i][j]:
-                        min_dist = self.dist_matrix[i][j]
-                        min_i = i
+            min_i = non_clustered_pts_i[0]
+            min_j = non_clustered_pts_i[1]
+            min_dist = self.dist_matrix[min_i][min_j]
+            for i in non_clustered_pts_i:
+                for j in non_clustered_pts_i:
+                    if i != j:
+                        if min_dist > self.dist_matrix[i][j]:
+                            min_dist = self.dist_matrix[i][j]
+                            min_i = i
+                            min_j = j
 
             # Put one of the nearest points into the cluster.
-            i = non_clustered_pts_i[min_i]
+            #min_i = non_clustered_pts_i[min_i]
+            #min_j = non_clustered_pts_i[min_j]
             clusters_i.append([])
             cur_cluster = len(clusters_i) - 1
-            clusters_i[cur_cluster].append(i)
-            non_clustered_pts_i.remove(i)
+            clusters_i[cur_cluster].append(min_i)
+            non_clustered_pts_i.remove(min_i)
 
             if self.xls_enable:
-                last_empty_row += 1
-                work_sheet.write(last_empty_row, 0, u'Создадим кластер №{}. ' \
-                 u'Добавим туда точку №{}'.format(cur_cluster, i))
-                last_empty_row += 1
+                work_sheet.write(last_empty_row + 1, 0, u'Создадим кластер №{}'.format(cur_cluster))
+                work_sheet.write(last_empty_row + 3, 0, u'Две ближайшие точки: {} и {} ({})'.format(min_i, min_j, min_dist))
+                work_sheet.write(last_empty_row + 4, 0, u'Добавим точку {} в кластер.'.format(min_i))
+                work_sheet.write(last_empty_row + 5, 0, u'Точка', style_table)
+                work_sheet.write_merge(last_empty_row + 5, last_empty_row+ 5, 1, 6, u'Среднее расстояние до кластера',style_table)
+                last_empty_row += 6
+
 
             non_clustered_pts_i_copy = non_clustered_pts_i[:]
 
             for j in non_clustered_pts_i:
+
                 computations_str = ''
                 middle_dist = 0
                 for point_i in clusters_i[cur_cluster]:
@@ -377,31 +409,18 @@ class Clusterization:
                 computations_str += ') / {} = {}'.format(len(clusters_i[cur_cluster]), middle_dist)
                 computations_str = '(' + computations_str[3:]
 
-
                 if self.xls_enable:
-                    work_sheet.write(last_empty_row, 0, u'Рассмотрим точку №{}. ' \
-                      u'Среднее расстояние до точек кластера №{} равно {}'
-                      .format(j, cur_cluster, computations_str))
+                    work_sheet.write(last_empty_row, 0, u'{}'.format(j), style_table)
+                    work_sheet.write_merge(last_empty_row, last_empty_row, 1, 6, u'{}'.format(computations_str),style_table)
                     last_empty_row += 1
 
                 # To include or not to inclule: that is the question.
                 if middle_dist > limit:
-
-                    if self.xls_enable:
-                        work_sheet.write(last_empty_row, 0, u'Следовательно, не будем ' \
-                         u'добавлять данную точку в этот кластер.')
-                        last_empty_row += 1
-
                     continue
 
                 else:
                     clusters_i[cur_cluster].append(j)
                     non_clustered_pts_i_copy.remove(j)
-
-                    if self.xls_enable:
-                        work_sheet.write(last_empty_row, 0, u'Следовательно, добавим '\
-                         u'данную точку в этот кластер.')
-                        last_empty_row += 1
 
             non_clustered_pts_i = non_clustered_pts_i_copy
 
@@ -802,7 +821,7 @@ class Clusterization:
         if self.xls_enable:
             ws.write(row, 0, u'Две самые ближайшие точки: {} и {} ({})'.format(imin, jmin, distmin))
             row += 2
-            ws.write(row, 0, u'Найдем из оставшихся точек ближайшую к уже рассмотренным.')
+            ws.write(row, 0, u'Найдем из оставшихся точек ближайшие к уже рассмотренным.')
             row += 1
             ws.write(row, 0, u'Рассм.', s_table)
             ws.write(row, 1, u'Ост.', s_table)
@@ -835,9 +854,13 @@ class Clusterization:
             ncptsi.remove(jmin)
 
         # Remove edges with maximum distance.
+        to_remove = None
         edges.sort(key = lambda i: i[2])
-        to_remove = edges[-(nclusters - 1):]
-        edges = edges[:-(nclusters - 1)]
+        if nclusters <= 1:
+            to_remove = []
+        else:
+            to_remove = edges[-(nclusters - 1):]
+            edges = edges[:-(nclusters - 1)]
 
         # Write deleted edges into xls.
         if self.xls_enable:
@@ -919,23 +942,22 @@ class Clusterization:
             for point, l in zip(self.points, self.labels):
                 ax.scatter([point[0]], [point[1]], [point[2]])
 
-            #     # Draw labels.
-            #     x2, y2, _ = proj3d.proj_transform(point[0], point[1], point[2], ax.get_proj())
-            #     labels.append(plt.annotate(
-            #         l,
-            #         xy = (x2, y2), xytext = (-20, 20),
-            #         textcoords = 'offset points', ha = 'right', va = 'bottom',
-            #         bbox = dict(boxstyle = 'round,pad=0.5', fc = 'yellow', alpha = 0.5),
-            #         arrowprops = dict(arrowstyle = '->', connectionstyle = 'arc3,rad=0')))
-            #
-            # # Recount labels position.
-            # def update_position(e):
-            #     for point, label in zip(self.points, labels):
-            #         x2, y2, _ = proj3d.proj_transform(point[0], point[1], point[2], ax.get_proj())
-            #         label.xy = x2, y2
-            #         label.update_positions(fig.canvas.renderer)
-            #         fig.canvas.draw()
-            # fig.canvas.mpl_connect('button_release_event', update_position)
+                # Draw labels.
+                x2, y2, _ = proj3d.proj_transform(point[0], point[1], point[2], ax.get_proj())
+                labels.append(plt.annotate(
+                    l,
+                    xy = (x2, y2), xytext = (-10, 10),
+                    textcoords = 'offset points', ha = 'right', va = 'bottom',
+                    bbox = dict(boxstyle = 'round,pad=0.5', fc = 'yellow', alpha = 0.5)))
+
+            # Recount labels position.
+            def update_position(e):
+                for point, label in zip(self.points, labels):
+                    x2, y2, _ = proj3d.proj_transform(point[0], point[1], point[2], ax.get_proj())
+                    label.xy = x2, y2
+                    label.update_positions(fig.canvas.renderer)
+                    fig.canvas.draw()
+            fig.canvas.mpl_connect('button_release_event', update_position)
 
             # Draw edges.
             for edge in edges:
@@ -972,7 +994,9 @@ if __name__ == '__main__':
 
     cl = Clusterization(pts3d)
     cl.xls_enable_output("output.xls")
-    # cl.trout(4)
-    # cl.draw()
-    edges = cl.crab(2)
-    cl.draw_edges(edges)
+
+    # edges = cl.crab(1)
+    # cl.draw_edges(edges)
+
+    cl.k_middle([1,5,7])
+    cl.draw()

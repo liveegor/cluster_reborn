@@ -42,7 +42,7 @@ class ClusterizationGUI (QtGui.QWidget, form.Ui_Form):
         self.point_xls_tool_button.clicked.connect(self.point_xls)
         self.xls_name_line_edit.textChanged.connect(self.change_xls_fname)
         self.methods_combo_box.currentIndexChanged.connect(self.enable_methods_stuff)
-        # todo: count button cliced
+        self.count_push_button.clicked.connect(self.count)
 
 
     def add_row(self):
@@ -53,6 +53,12 @@ class ClusterizationGUI (QtGui.QWidget, form.Ui_Form):
         row = self.points_table_widget.rowCount()
         self.points_table_widget.insertRow(row)
 
+        # Recount numeration.
+        labels = QtCore.QStringList()
+        for i in range(row + 1):
+            labels << QtCore.QString("%1").arg(i)
+        self.points_table_widget.setVerticalHeaderLabels(labels)
+
 
     def del_row(self):
         """
@@ -62,24 +68,22 @@ class ClusterizationGUI (QtGui.QWidget, form.Ui_Form):
         row_i = self.points_table_widget.currentRow()
         self.points_table_widget.removeRow(row_i)
 
+        # Recount numeration.
+        rowsn = self.points_table_widget.rowCount()
+        labels = QtCore.QStringList()
+        for i in range(rowsn + 1):
+            labels << QtCore.QString("%1").arg(i)
+        self.points_table_widget.setVerticalHeaderLabels(labels)
+
 
     def save_points(self):
         """
         Saves the points from table into file.
         """
 
-        pts_n = self.points_table_widget.rowCount()
-        dimension = self.points_table_widget.columnCount()
-        points = [[0.0 for j in range(dimension)] for i in range(pts_n)]
-
-        # Reading points into the list.
-        for i in range(pts_n):
-            for j in range(dimension):
-                item = self.points_table_widget.item(i,j)
-                if not item :
-                    QtGui.QMessageBox.about(self, u"Ошибка!", u"Заполните все поля или удалите ненужные.")
-                    return
-                points[i][j] = item.text().toDouble()[0]
+        points = self.__read_points()
+        if not points:
+            return
 
         # Pick the points into file.
         fName = QtGui.QFileDialog.getSaveFileName(self, 'Save')
@@ -212,6 +216,93 @@ class ClusterizationGUI (QtGui.QWidget, form.Ui_Form):
             self.clusters_number_spin_box.setEnabled(True)
 
         elif m_index == 4:  # Serial
+            pass
+
+    def __read_points(self):
+        """
+        Return points from table.
+        """
+
+        pts_n = self.points_table_widget.rowCount()
+        dimension = self.points_table_widget.columnCount()
+        points = [[0.0 for j in range(dimension)] for i in range(pts_n)]
+
+        # Reading points into the list.
+        for i in range(pts_n):
+            for j in range(dimension):
+                item = self.points_table_widget.item(i,j)
+                if not item :
+                    QtGui.QMessageBox.about(self, u"Ошибка!", u"Заполните все поля или удалите ненужные.")
+                    return None
+                points[i][j] = item.text().toDouble()[0]
+
+        return points
+
+    def count(self):
+        """
+        count_push_botton handler.
+        """
+
+        # Get points.
+        points = self.__read_points()
+        if not points:
+            return
+        self.cl.set_points(points)
+
+        method = self.methods_combo_box.currentIndex()
+
+        # todo :threading
+
+        # King
+        if method == 0:
+
+            # Get limit (or border).
+            limit = self.border_spin_box.value()
+            limit = limit ** 2
+
+            # Do math.
+            self.cl.king(limit)
+            self.cl.draw()
+
+        # K-middle
+        elif method == 1:
+
+            # Get centres.
+            try:
+                centres = list(self.centres_line_edit.text().toUtf8().data().split(';'))
+                for i in range(len(centres)):
+                    centres[i] = int(centres[i])
+            except:
+                QtGui.QMessageBox.about(self, u"Ошибка!", u"Неправильные центры кластеров.")
+                return
+
+            # Do math.
+            self.cl.k_middle(centres)
+            self.cl.draw()
+
+        # Trout
+        elif method == 2:
+
+            # Get radius.
+            radius = self.radius_spin_box.value()
+
+            # Do math.
+            self.cl.trout(radius)
+            self.cl.draw()
+
+        # Crab
+        elif method == 3:
+
+            # Get number of clusters.
+            n = self.clusters_number_spin_box.value()
+
+            # Do math.
+            edges = self.cl.crab(n)
+            self.cl.draw_edges(edges)
+
+        # Serial
+        elif method == 4:
+            # todo: serial
             pass
 
 # Call if this is main module
