@@ -249,8 +249,8 @@ class Clusterization:
             if (max_x - min_x) > (max_y - min_y):
                 wh = max_x - min_x
             else: wh = max_y - min_y
-            plt.xlim(min_x - wh/12.0, (min_x + wh + wh/12.0) * 1.07)
-            plt.ylim(min_y - wh/12.0, (min_y + wh + wh/12.0))
+            plt.xlim(min_x, (min_x + wh) * 1.07)
+            plt.ylim(min_y, (min_y + wh))
 
             # Draw clusters
             for cluster in self.clusters:
@@ -535,7 +535,7 @@ class Clusterization:
                 min_dist = math.sqrt(min_dist)
 
                 if self.xls_enable:
-                    ws.write(row + 1, i + 1, u'{}'.format(min_dist), s_table)
+                    ws.write(row + 1, i + 1,(min_dist), s_table)
 
                 # Find min distance cluster.
                 for j in range(1, cn):
@@ -548,7 +548,7 @@ class Clusterization:
                         minj = j
 
                     if self.xls_enable:
-                        ws.write(row + j + 1, i + 1, u'{}'.format(tmp_dist), s_table)
+                        ws.write(row + j + 1, i + 1, (tmp_dist), s_table)
 
                 # Append point to min distance cluster.
                 clusters[minj].append(i)
@@ -582,7 +582,7 @@ class Clusterization:
                 for i in range(cn):
                     ws.write(row, i + 1, u'{}'.format(i), s_table)
                     for j in range(self.dimension):
-                        ws.write(row + j + 1, i + 1, u'{}'.format(centres[i][j]), s_table)
+                        ws.write(row + j + 1, i + 1, (centres[i][j]), s_table)
                 row += (self.dimension + 2)
 
             # Compare prev and current clusters.
@@ -600,9 +600,9 @@ class Clusterization:
             # Write comparation result.
             if self.xls_enable:
                 if not equal:
-                    ws.write(row, 0, u'Предыдущий кластер не равен текущему, продолжаем вычисления')
+                    ws.write(row, 0, u'Предыдущие кластеры не равны текущим, продолжаем вычисления')
                 else:
-                    ws.write(row, 0, u'Предыдущий кластер равен текущему, вычисления закончены')
+                    ws.write(row, 0, u'Предыдущие кластеры равны текущим, вычисления закончены')
                 row += 2
 
         # Write conclusion.
@@ -714,7 +714,7 @@ class Clusterization:
 
                     # Ending of table of distances between points and sphere centre.
                     if self.xls_enable:
-                        ws.write(row, i, u'{}'.format(distance), s_table)
+                        ws.write(row, i, (distance), s_table)
 
                     # Make decision to include into the cluster.
                     if distance < radius:
@@ -1021,17 +1021,17 @@ if __name__ == '__main__':
     labels = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10',
               '11', '12', '13', '14', '15']
 
-    cl = Clusterization(pts)
+    cl = Clusterization(pts3d)
     cl.xls_enable_output("output.xls")
 
-    # cl.king(5)
+    # cl.king(25)
     # cl.draw()
 
-    # cl.k_middle([1,2,3])
+    cl.k_middle([10,1,9])
+    cl.draw()
+
+    # cl.trout(4)
     # cl.draw()
 
-    # cl.trout(4.2)
-    # cl.draw()
-
-    edges = cl.crab(3)
-    cl.draw_edges(edges)
+    # edges = cl.crab(3)
+    # cl.draw_edges(edges)

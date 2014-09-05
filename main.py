@@ -257,7 +257,6 @@ class ClusterizationGUI (QtGui.QWidget, form.Ui_Form):
 
             # Get limit (or border).
             limit = self.border_spin_box.value()
-            limit = limit ** 2
 
             # Do math.
             self.cl.king(limit)
